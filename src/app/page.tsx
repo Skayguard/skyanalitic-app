@@ -7,18 +7,18 @@ import { AlertTriangle, Wifi } from 'lucide-react';
 export default function DashboardPage() {
   // Placeholder status. In a real app, this would come from a service.
   const monitoringStatus = "Ativo"; 
-  const lastCameraCapture = new Date().toLocaleTimeString('pt-BR'); // Updated to reflect actual camera capture time
+  const lastCameraCapture = new Date().toLocaleTimeString('pt-BR'); 
 
   return (
     <div className="container mx-auto py-2">
       <h1 className="text-3xl font-bold mb-8 text-foreground font-headline">Painel Skywatch</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6"> {/* Alterado de lg:grid-cols-3 */}
+        <div className="lg:col-span-3"> {/* Alterado de lg:col-span-2 */}
           <CameraFeed />
         </div>
         
-        <div className="space-y-6">
+        <div className="lg:col-span-2 space-y-6"> {/* Adicionado lg:col-span-2 */}
           <Card className="shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
