@@ -74,7 +74,7 @@ export function CapturedEventsList() {
                 <li key={event.id} className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors">
                   <div className="flex items-center space-x-4">
                     <Image
-                      src={event.thumbnailUrl || `https://placehold.co/100x100.png?text=UAP`}
+                      src={event.thumbnailUrl || `https://placehold.co/64x64.png?text=UAP`}
                       alt={`Miniatura para ${event.mediaName}`}
                       width={64}
                       height={64}
@@ -94,11 +94,13 @@ export function CapturedEventsList() {
                         }
                       </p>
                     </div>
-                    <Button asChild variant="outline" size="sm" className="flex-shrink-0"> {/* Added flex-shrink-0 */}
-                      <Link href={`/analysis/${event.id}`} aria-label={`Ver análise para ${event.mediaName}`}>
-                        <Eye className="mr-2 h-4 w-4" /> Ver
-                      </Link>
-                    </Button>
+                    <Link href={`/analysis/${event.id}`} legacyBehavior passHref>
+                      <Button asChild variant="outline" size="sm" className="flex-shrink-0" aria-label={`Ver análise para ${event.mediaName}`}>
+                        <a>
+                          <Eye className="mr-2 h-4 w-4" /> Ver
+                        </a>
+                      </Button>
+                    </Link>
                   </div>
                 </li>
               ))}
@@ -109,4 +111,3 @@ export function CapturedEventsList() {
     </Card>
   );
 }
-
