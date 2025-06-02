@@ -6,8 +6,8 @@ import { AnalyzedEventsProvider } from '@/contexts/AnalyzedEventsContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 
 export const metadata: Metadata = {
-  title: 'Skywatch UAP Analyzer',
-  description: 'Analyze UAP sightings with AI',
+  title: 'Skywatch Analisador de UAP',
+  description: 'Analise avistamentos de UAP com IA',
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

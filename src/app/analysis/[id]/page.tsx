@@ -33,7 +33,7 @@ export default function AnalysisDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-muted-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-        <p className="text-xl">Loading analysis report...</p>
+        <p className="text-xl">Carregando relatório de análise...</p>
       </div>
     );
   }
@@ -42,13 +42,13 @@ export default function AnalysisDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center p-6">
         <AlertTriangle className="h-16 w-16 text-destructive mb-6" />
-        <h1 className="text-3xl font-bold mb-4 text-foreground">Analysis Not Found</h1>
+        <h1 className="text-3xl font-bold mb-4 text-foreground">Análise Não Encontrada</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          The analysis report you are looking for does not exist or could not be loaded.
+          O relatório de análise que você está procurando não existe ou não pôde ser carregado.
         </p>
         <Button asChild variant="outline">
           <Link href="/">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Go to Dashboard
+            <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Link>
         </Button>
       </div>
@@ -58,7 +58,7 @@ export default function AnalysisDetailsPage() {
   return (
     <div className="container mx-auto py-2">
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -67,12 +67,12 @@ export default function AnalysisDetailsPage() {
             <CardContent className="p-4">
               <h2 className="text-lg font-semibold mb-2 text-foreground">{event.mediaName}</h2>
               <p className="text-xs text-muted-foreground mb-3">
-                Captured: {new Date(event.timestamp).toLocaleString()}
+                Capturado em: {new Date(event.timestamp).toLocaleString('pt-BR')}
               </p>
               {event.thumbnailUrl && (
                 <Image
                   src={event.thumbnailUrl}
-                  alt={`Thumbnail for ${event.mediaName}`}
+                  alt={`Miniatura para ${event.mediaName}`}
                   width={400}
                   height={300}
                   className="rounded-md object-cover w-full aspect-video border border-border"

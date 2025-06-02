@@ -20,7 +20,7 @@ export function CapturedEventsList() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ListChecks className="h-6 w-6 text-primary" />
-            Captured Events Log
+            Registro de Eventos Capturados
           </CardTitle>
           <Skeleton className="h-4 w-3/4" />
         </CardHeader>
@@ -48,15 +48,15 @@ export function CapturedEventsList() {
         <div>
           <CardTitle className="flex items-center gap-2">
             <ListChecks className="h-6 w-6 text-primary" />
-            Captured Events Log
+            Registro de Eventos Capturados
           </CardTitle>
           <CardDescription>
-            Review past analyses. Click an event to see details.
+            Revise análises passadas. Clique em um evento para ver detalhes.
           </CardDescription>
         </div>
         {analyzedEvents.length > 0 && (
-           <Button variant="destructive" size="sm" onClick={clearAllEvents} aria-label="Clear all events">
-            <Trash2 className="mr-2 h-4 w-4" /> Clear All
+           <Button variant="destructive" size="sm" onClick={clearAllEvents} aria-label="Limpar todos os eventos">
+            <Trash2 className="mr-2 h-4 w-4" /> Limpar Tudo
           </Button>
         )}
       </CardHeader>
@@ -64,8 +64,8 @@ export function CapturedEventsList() {
         {analyzedEvents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">No events captured yet.</p>
-            <p>Perform an analysis or upload evidence to see results here.</p>
+            <p className="text-lg font-medium">Nenhum evento capturado ainda.</p>
+            <p>Realize uma análise ou envie evidências para ver os resultados aqui.</p>
           </div>
         ) : (
           <ScrollArea className="h-[400px] pr-4">
@@ -75,7 +75,7 @@ export function CapturedEventsList() {
                   <div className="flex items-center space-x-4">
                     <Image
                       src={event.thumbnailUrl || `https://placehold.co/100x100.png?text=UAP`}
-                      alt={`Thumbnail for ${event.mediaName}`}
+                      alt={`Miniatura para ${event.mediaName}`}
                       width={64}
                       height={64}
                       className="rounded-md object-cover aspect-square border border-border"
@@ -84,10 +84,10 @@ export function CapturedEventsList() {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base font-semibold truncate text-foreground">{event.mediaName}</h3>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(event.timestamp).toLocaleString()}
+                        {new Date(event.timestamp).toLocaleString('pt-BR')}
                       </p>
                       <p className={`text-sm font-medium mt-1 ${event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 'text-destructive' : 'text-green-400'}`}>
-                        UAP Probability: {(event.analysis.probabilityOfGenuineUapEvent * 100).toFixed(1)}%
+                        Probabilidade de UAP: {(event.analysis.probabilityOfGenuineUapEvent * 100).toFixed(1)}%
                         {event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 
                           <AlertTriangle className="inline ml-1 h-4 w-4" /> : 
                           <CheckCircle2 className="inline ml-1 h-4 w-4" />
@@ -95,8 +95,8 @@ export function CapturedEventsList() {
                       </p>
                     </div>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/analysis/${event.id}`} aria-label={`View analysis for ${event.mediaName}`}>
-                        <Eye className="mr-2 h-4 w-4" /> View
+                      <Link href={`/analysis/${event.id}`} aria-label={`Ver análise para ${event.mediaName}`}>
+                        <Eye className="mr-2 h-4 w-4" /> Ver
                       </Link>
                     </Button>
                   </div>

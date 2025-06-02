@@ -32,8 +32,8 @@ export function SensitivityControlsForm() {
     event.preventDefault();
     updateSettings(localSettings);
     toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated.",
+      title: "Configurações Salvas",
+      description: "Suas preferências foram atualizadas.",
     });
   };
 
@@ -43,13 +43,13 @@ export function SensitivityControlsForm() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <SettingsIcon className="h-6 w-6 text-primary" />
-            Detection Settings
+            Configurações de Detecção
           </CardTitle>
-          <CardDescription>Adjust parameters for media capture and analysis.</CardDescription>
+          <CardDescription>Ajuste os parâmetros para captura e análise de mídia.</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="ml-2 text-muted-foreground">Loading settings...</p>
+          <p className="ml-2 text-muted-foreground">Carregando configurações...</p>
         </CardContent>
       </Card>
     );
@@ -60,17 +60,17 @@ export function SensitivityControlsForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <SettingsIcon className="h-6 w-6 text-primary" />
-          Detection Settings
+          Configurações de Detecção
         </CardTitle>
         <CardDescription>
-          Adjust parameters for media capture and analysis. These settings are currently for UI demonstration.
+          Ajuste os parâmetros para captura e análise de mídia. Estas configurações são atualmente para demonstração da UI.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-8">
           <div>
             <div className="flex justify-between items-center mb-2">
-              <Label htmlFor="motion-sensitivity" className="text-base font-medium">Motion Sensitivity</Label>
+              <Label htmlFor="motion-sensitivity" className="text-base font-medium">Sensibilidade ao Movimento</Label>
               <span className="text-sm font-semibold text-accent">{localSettings.motionSensitivity}%</span>
             </div>
             <Slider
@@ -80,15 +80,15 @@ export function SensitivityControlsForm() {
               step={1}
               value={[localSettings.motionSensitivity]}
               onValueChange={handleSliderChange('motionSensitivity')}
-              aria-label="Motion Sensitivity"
+              aria-label="Sensibilidade ao Movimento"
               className="[&>span:first-child>span]:bg-primary"
             />
-            <p className="text-xs text-muted-foreground mt-1">Higher values mean more sensitive to motion.</p>
+            <p className="text-xs text-muted-foreground mt-1">Valores mais altos significam maior sensibilidade ao movimento.</p>
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <Label htmlFor="min-brightness" className="text-base font-medium">Minimum Brightness for Capture</Label>
+              <Label htmlFor="min-brightness" className="text-base font-medium">Brilho Mínimo para Captura</Label>
               <span className="text-sm font-semibold text-accent">{localSettings.minBrightness}%</span>
             </div>
             <Slider
@@ -98,16 +98,16 @@ export function SensitivityControlsForm() {
               step={1}
               value={[localSettings.minBrightness]}
               onValueChange={handleSliderChange('minBrightness')}
-              aria-label="Minimum Brightness"
+              aria-label="Brilho Mínimo"
               className="[&>span:first-child>span]:bg-primary"
             />
-            <p className="text-xs text-muted-foreground mt-1">Objects brighter than this threshold may trigger capture.</p>
+            <p className="text-xs text-muted-foreground mt-1">Objetos mais brilhantes que este limite podem acionar a captura.</p>
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <Label htmlFor="min-object-size" className="text-base font-medium">Minimum Detected Object Size</Label>
-              <span className="text-sm font-semibold text-accent">{localSettings.minObjectSize} (units)</span>
+              <Label htmlFor="min-object-size" className="text-base font-medium">Tamanho Mínimo de Objeto Detectado</Label>
+              <span className="text-sm font-semibold text-accent">{localSettings.minObjectSize} (unidades)</span>
             </div>
             <Slider
               id="min-object-size"
@@ -116,15 +116,15 @@ export function SensitivityControlsForm() {
               step={1}
               value={[localSettings.minObjectSize]}
               onValueChange={handleSliderChange('minObjectSize')}
-              aria-label="Minimum Object Size"
+              aria-label="Tamanho Mínimo do Objeto"
               className="[&>span:first-child>span]:bg-primary"
             />
-            <p className="text-xs text-muted-foreground mt-1">Defines the smallest size of an object to be considered significant.</p>
+            <p className="text-xs text-muted-foreground mt-1">Define o menor tamanho de um objeto a ser considerado significativo.</p>
           </div>
 
           <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
             <Save className="mr-2 h-4 w-4" />
-            Save Settings
+            Salvar Configurações
           </Button>
         </form>
       </CardContent>

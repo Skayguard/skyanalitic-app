@@ -6,12 +6,12 @@ import { AlertTriangle, Wifi } from 'lucide-react';
 
 export default function DashboardPage() {
   // Placeholder status. In a real app, this would come from a service.
-  const monitoringStatus = "Active"; 
-  const lastDetection = new Date().toLocaleTimeString();
+  const monitoringStatus = "Ativo"; 
+  const lastDetection = new Date().toLocaleTimeString('pt-BR');
 
   return (
     <div className="container mx-auto py-2">
-      <h1 className="text-3xl font-bold mb-8 text-foreground font-headline">Skywatch Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-8 text-foreground font-headline">Painel Skywatch</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -23,27 +23,27 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Wifi className="h-6 w-6 text-primary" />
-                System Status
+                Status do Sistema
               </CardTitle>
-              <CardDescription>Current operational status of the system.</CardDescription>
+              <CardDescription>Status operacional atual do sistema.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Monitoring:</span>
-                <span className={`font-semibold ${monitoringStatus === "Active" ? "text-green-400" : "text-destructive"}`}>
+                <span className="text-sm text-muted-foreground">Monitoramento:</span>
+                <span className={`font-semibold ${monitoringStatus === "Ativo" ? "text-green-400" : "text-destructive"}`}>
                   {monitoringStatus}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Motion Detection:</span>
-                <span className="font-semibold text-green-400">Enabled</span>
+                <span className="text-sm text-muted-foreground">Detecção de Movimento:</span>
+                <span className="font-semibold text-green-400">Habilitado</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Last Simulated Detection:</span>
+                <span className="text-sm text-muted-foreground">Última Detecção Simulada:</span>
                 <span className="font-semibold text-accent">{lastDetection}</span>
               </div>
                <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">AI Analysis Service:</span>
+                <span className="text-sm text-muted-foreground">Serviço de Análise IA:</span>
                 <span className="font-semibold text-green-400">Online</span>
               </div>
             </CardContent>

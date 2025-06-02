@@ -8,9 +8,9 @@ import { LayoutDashboard, UploadCloud, Settings, Radar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/upload', label: 'Upload Evidence', icon: UploadCloud },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/', label: 'Painel', icon: LayoutDashboard },
+  { href: '/upload', label: 'Enviar Evidência', icon: UploadCloud },
+  { href: '/settings', label: 'Configurações', icon: Settings },
 ];
 
 export function SidebarNav() {

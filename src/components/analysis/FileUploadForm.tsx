@@ -10,7 +10,7 @@ import { UploadCloud, Loader2, AlertTriangle, FileCheck2, FileQuestion } from 'l
 import { useToast } from '@/hooks/use-toast';
 import { analyzeUapMedia, AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
-import { AnalysisReport } from './AnalysisReport'; // Assuming this component exists for displaying results
+import { AnalysisReport } from './AnalysisReport'; 
 
 export function FileUploadForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -25,7 +25,7 @@ export function FileUploadForm() {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
-        toast({ title: "File too large", description: "Please select a file smaller than 10MB.", variant: "destructive" });
+        toast({ title: "Arquivo muito grande", description: "Por favor, selecione um arquivo menor que 10MB.", variant: "destructive" });
         setFile(null);
         setPreviewUrl(null);
         return;
@@ -46,7 +46,7 @@ export function FileUploadForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!file) {
-      toast({ title: "No file selected", description: "Please select a file to analyze.", variant: "destructive" });
+      toast({ title: "Nenhum arquivo selecionado", description: "Por favor, selecione um arquivo para analisar.", variant: "destructive" });
       return;
     }
 
@@ -70,15 +70,15 @@ export function FileUploadForm() {
         };
         addAnalyzedEvent(newEvent);
         toast({
-          title: "Analysis Complete",
-          description: `UAP Probability: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
+          title: "Análise Concluída",
+          description: `Probabilidade de UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
         });
       } catch (err) {
-        console.error("AI Analysis failed:", err);
-        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during AI analysis.";
+        console.error("Falha na análise IA:", err);
+        const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise IA.";
         setError(errorMessage);
         toast({
-          title: "Analysis Failed",
+          title: "Falha na Análise",
           description: errorMessage,
           variant: "destructive",
         });
@@ -87,8 +87,8 @@ export function FileUploadForm() {
       }
     };
     reader.onerror = () => {
-      setError("Failed to read file.");
-      toast({ title: "File Read Error", description: "Could not read the selected file.", variant: "destructive" });
+      setError("Falha ao ler o arquivo.");
+      toast({ title: "Erro de Leitura do Arquivo", description: "Não foi possível ler o arquivo selecionado.", variant: "destructive" });
       setIsAnalyzing(false);
     };
   };
@@ -98,17 +98,17 @@ export function FileUploadForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <UploadCloud className="h-6 w-6 text-primary" />
-          Upload Evidence for Analysis
+          Enviar Evidência para Análise
         </CardTitle>
         <CardDescription>
-          Manually upload a video or photo (max 10MB) of a potential UAP for AI analysis.
+          Envie manualmente um vídeo ou foto (máx. 10MB) de um potencial UAP para análise por IA.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="file-upload" className="text-sm font-medium text-foreground">
-              Choose File
+              Escolher Arquivo
             </Label>
             <Input
               id="file-upload"
@@ -118,20 +118,20 @@ export function FileUploadForm() {
               className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               aria-describedby="file-upload-help"
             />
-            <p id="file-upload-help" className="mt-1 text-xs text-muted-foreground">Supported formats: JPG, PNG, MP4, MOV, etc. Max 10MB.</p>
+            <p id="file-upload-help" className="mt-1 text-xs text-muted-foreground">Formatos suportados: JPG, PNG, MP4, MOV, etc. Máx 10MB.</p>
           </div>
 
           {previewUrl && file && (
             <div className="mt-4 p-4 border border-border rounded-md bg-muted/30">
-              <h4 className="text-sm font-medium text-foreground mb-2">File Preview:</h4>
+              <h4 className="text-sm font-medium text-foreground mb-2">Pré-visualização do Arquivo:</h4>
               {file.type.startsWith('image/') ? (
-                <img src={previewUrl} alt="File preview" className="max-h-60 w-auto rounded-md border border-border" />
+                <img src={previewUrl} alt="Pré-visualização do arquivo" className="max-h-60 w-auto rounded-md border border-border" />
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <FileQuestion className="h-10 w-10" />
                   <div>
                     <p className="font-medium">{file.name}</p>
-                    <p className="text-xs">Video preview not available here.</p>
+                    <p className="text-xs">Pré-visualização de vídeo não disponível aqui.</p>
                   </div>
                 </div>
               )}
@@ -144,7 +144,7 @@ export function FileUploadForm() {
             ) : (
               <UploadCloud className="mr-2 h-4 w-4" />
             )}
-            {isAnalyzing ? 'Analyzing...' : 'Upload & Analyze'}
+            {isAnalyzing ? 'Analisando...' : 'Enviar & Analisar'}
           </Button>
         </form>
 
@@ -152,7 +152,7 @@ export function FileUploadForm() {
           <div className="mt-6 p-4 bg-destructive/10 border border-destructive text-destructive rounded-md flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold">Analysis Error</h4>
+              <h4 className="font-semibold">Erro na Análise</h4>
               <p className="text-sm">{error}</p>
             </div>
           </div>
@@ -162,9 +162,9 @@ export function FileUploadForm() {
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2">
               <FileCheck2 className="h-6 w-6 text-green-400"/>
-              Analysis Report
+              Relatório de Análise
             </h3>
-            <AnalysisReport analysis={analysisResult} mediaName={file?.name || "Uploaded Media"} />
+            <AnalysisReport analysis={analysisResult} mediaName={file?.name || "Mídia Enviada"} />
           </div>
         )}
       </CardContent>

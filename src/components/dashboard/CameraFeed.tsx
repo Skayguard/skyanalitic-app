@@ -30,12 +30,12 @@ export function CameraFeed() {
             setError(null);
           }
         } catch (err) {
-          console.error("Error accessing camera:", err);
-          setError("Could not access camera. Please check permissions.");
+          console.error("Erro ao acessar câmera:", err);
+          setError("Não foi possível acessar a câmera. Verifique as permissões.");
           setIsCameraActive(false);
         }
       } else {
-        setError("Camera access not supported by this browser.");
+        setError("Acesso à câmera não suportado por este navegador.");
         setIsCameraActive(false);
       }
     }
@@ -51,7 +51,7 @@ export function CameraFeed() {
 
   const handleSimulateCapture = async () => {
     if (!videoRef.current || !canvasRef.current || !isCameraActive) {
-      toast({ title: "Capture Failed", description: "Camera not active or ready.", variant: "destructive" });
+      toast({ title: "Falha na Captura", description: "Câmera não ativa ou pronta.", variant: "destructive" });
       return;
     }
 
@@ -62,7 +62,7 @@ export function CameraFeed() {
     canvas.height = video.videoHeight;
     const context = canvas.getContext('2d');
     if (!context) {
-      toast({ title: "Capture Failed", description: "Could not get canvas context.", variant: "destructive" });
+      toast({ title: "Falha na Captura", description: "Não foi possível obter o contexto do canvas.", variant: "destructive" });
       setIsAnalyzing(false);
       return;
     }
@@ -75,19 +75,19 @@ export function CameraFeed() {
         id: new Date().toISOString() + Math.random().toString(36).substring(2,9),
         timestamp: new Date().toISOString(),
         thumbnailUrl: mediaDataUri, // Using captured frame as thumbnail
-        mediaName: `Live Capture - ${new Date().toLocaleString()}`,
+        mediaName: `Captura ao Vivo - ${new Date().toLocaleString('pt-BR')}`,
         analysis: analysisResult,
       };
       addAnalyzedEvent(newEvent);
       toast({
-        title: "Analysis Complete",
-        description: `UAP Probability: ${(analysisResult.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
+        title: "Análise Concluída",
+        description: `Probabilidade de UAP: ${(analysisResult.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
       });
     } catch (err) {
-      console.error("AI Analysis failed:", err);
+      console.error("Falha na análise IA:", err);
       toast({
-        title: "Analysis Failed",
-        description: err instanceof Error ? err.message : "An unknown error occurred during AI analysis.",
+        title: "Falha na Análise",
+        description: err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise IA.",
         variant: "destructive",
       });
     } finally {
@@ -100,10 +100,10 @@ export function CameraFeed() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Camera className="h-6 w-6 text-primary" />
-          Live Camera Feed
+          Feed da Câmera ao Vivo
         </CardTitle>
         <CardDescription>
-          Real-time monitoring. Click "Simulate Capture & Analyze" to process the current frame.
+          Monitoramento em tempo real. Clique em "Simular Captura & Analisar" para processar o quadro atual.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -112,7 +112,7 @@ export function CameraFeed() {
           {!isCameraActive && !error && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
-              <p className="text-muted-foreground">Initializing camera...</p>
+              <p className="text-muted-foreground">Inicializando câmera...</p>
             </div>
           )}
           {error && (
@@ -125,7 +125,7 @@ export function CameraFeed() {
             <div className="absolute bottom-2 right-2 opacity-80">
                <div className="bg-destructive text-destructive-foreground px-2 py-1 text-xs rounded-full flex items-center gap-1">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  REC
+                  GRAV
                 </div>
             </div>
            )}
@@ -135,14 +135,14 @@ export function CameraFeed() {
           onClick={handleSimulateCapture} 
           disabled={!isCameraActive || isAnalyzing}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          aria-label="Simulate Capture and Analyze"
+          aria-label="Simular Captura e Analisar"
         >
           {isAnalyzing ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Zap className="mr-2 h-4 w-4" />
           )}
-          {isAnalyzing ? 'Analyzing...' : 'Simulate Capture & Analyze'}
+          {isAnalyzing ? 'Analisando...' : 'Simular Captura & Analisar'}
         </Button>
       </CardContent>
     </Card>

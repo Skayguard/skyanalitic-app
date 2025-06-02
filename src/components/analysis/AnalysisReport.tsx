@@ -33,18 +33,18 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
       <CardHeader>
         <CardTitle className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <BrainCircuit className="h-7 w-7 text-primary" />
-          AI Analysis Report
+          Relatório de Análise IA
         </CardTitle>
         <CardDescription>
-          Detailed findings for: <span className="font-medium text-accent">{mediaName}</span>
-          {timestamp && ` (Analyzed: ${new Date(timestamp).toLocaleString()})`}
+          Resultados detalhados para: <span className="font-medium text-accent">{mediaName}</span>
+          {timestamp && ` (Analisado em: ${new Date(timestamp).toLocaleString('pt-BR')})`}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <dl className="divide-y divide-border">
           <DetailItem
             icon={Percent}
-            label="Probability of Genuine UAP"
+            label="Probabilidade de UAP Genuíno"
             value={
               <div className="flex items-center gap-2">
                 <span className={`font-bold text-lg ${isHighProbability ? 'text-destructive' : 'text-green-400'}`}>
@@ -63,23 +63,23 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
 
           <DetailItem
             icon={FileText}
-            label="Summary"
+            label="Resumo"
             value={<p className="leading-relaxed">{analysis.summary}</p>}
           />
           <DetailItem
             icon={BrainCircuit} // Re-using, consider a different icon for "Anomaly Grade"
-            label="Anomaly Grade"
+            label="Grau de Anomalia"
             value={<Badge variant={isHighProbability ? "destructive" : "secondary"} className="text-sm">{analysis.anomalyGrade}</Badge>}
           />
           <DetailItem
             icon={FileText} // Re-using, consider a different icon for "Technical Details"
-            label="Technical Details"
-            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.technicalDetails || "Not available"}</p>}
+            label="Detalhes Técnicos"
+            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.technicalDetails || "Não disponível"}</p>}
           />
           <DetailItem
             icon={Database}
-            label="Database Comparisons"
-            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.databaseComparisons || "Not available"}</p>}
+            label="Comparações com Banco de Dados"
+            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.databaseComparisons || "Não disponível"}</p>}
           />
         </dl>
       </CardContent>
