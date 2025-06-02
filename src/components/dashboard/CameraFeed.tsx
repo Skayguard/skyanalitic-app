@@ -49,7 +49,7 @@ export function CameraFeed() {
     };
   }, []);
 
-  const handleSimulateCapture = async () => {
+  const handleCaptureAndAnalyze = async () => {
     if (!videoRef.current || !canvasRef.current || !isCameraActive) {
       toast({ title: "Falha na Captura", description: "Câmera não ativa ou pronta.", variant: "destructive" });
       return;
@@ -75,7 +75,7 @@ export function CameraFeed() {
         id: new Date().toISOString() + Math.random().toString(36).substring(2,9),
         timestamp: new Date().toISOString(),
         thumbnailUrl: mediaDataUri, // Using captured frame as thumbnail
-        mediaName: `Captura ao Vivo - ${new Date().toLocaleString('pt-BR')}`,
+        mediaName: `Captura da Câmera - ${new Date().toLocaleString('pt-BR')}`,
         analysis: analysisResult,
       };
       addAnalyzedEvent(newEvent);
@@ -103,7 +103,7 @@ export function CameraFeed() {
           Feed da Câmera ao Vivo
         </CardTitle>
         <CardDescription>
-          Monitoramento em tempo real. Clique em "Simular Captura & Analisar" para processar o quadro atual.
+          Monitoramento em tempo real. Clique em "Capturar Quadro & Analisar" para processar o quadro atual da câmera.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -132,17 +132,17 @@ export function CameraFeed() {
         </div>
         <canvas ref={canvasRef} style={{ display: 'none' }} />
         <Button 
-          onClick={handleSimulateCapture} 
+          onClick={handleCaptureAndAnalyze} 
           disabled={!isCameraActive || isAnalyzing}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          aria-label="Simular Captura e Analisar"
+          aria-label="Capturar Quadro e Analisar"
         >
           {isAnalyzing ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Zap className="mr-2 h-4 w-4" />
           )}
-          {isAnalyzing ? 'Analisando...' : 'Simular Captura & Analisar'}
+          {isAnalyzing ? 'Analisando...' : 'Capturar Quadro & Analisar'}
         </Button>
       </CardContent>
     </Card>

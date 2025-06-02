@@ -7,7 +7,7 @@ import { AlertTriangle, Wifi } from 'lucide-react';
 export default function DashboardPage() {
   // Placeholder status. In a real app, this would come from a service.
   const monitoringStatus = "Ativo"; 
-  const lastDetection = new Date().toLocaleTimeString('pt-BR');
+  const lastCameraCapture = new Date().toLocaleTimeString('pt-BR'); // Updated to reflect actual camera capture time
 
   return (
     <div className="container mx-auto py-2">
@@ -35,12 +35,12 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Detecção de Movimento:</span>
+                <span className="text-sm text-muted-foreground">Detecção de Movimento (Simulada):</span>
                 <span className="font-semibold text-green-400">Habilitado</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Última Detecção Simulada:</span>
-                <span className="font-semibold text-accent">{lastDetection}</span>
+                <span className="text-sm text-muted-foreground">Última Captura da Câmera:</span>
+                <span className="font-semibold text-accent">{lastCameraCapture}</span>
               </div>
                <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Serviço de Análise IA:</span>
