@@ -81,7 +81,7 @@ export function CapturedEventsList() {
                       className="rounded-md object-cover aspect-square border border-border"
                       data-ai-hint="night sky"
                     />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 overflow-hidden"> {/* Added overflow-hidden */}
                       <h3 className="text-base font-semibold truncate text-foreground">{event.mediaName}</h3>
                       <p className="text-xs text-muted-foreground">
                         {new Date(event.timestamp).toLocaleString('pt-BR')}
@@ -94,7 +94,7 @@ export function CapturedEventsList() {
                         }
                       </p>
                     </div>
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline" size="sm" className="flex-shrink-0"> {/* Added flex-shrink-0 */}
                       <Link href={`/analysis/${event.id}`} aria-label={`Ver análise para ${event.mediaName}`}>
                         <Eye className="mr-2 h-4 w-4" /> Ver
                       </Link>
@@ -109,3 +109,4 @@ export function CapturedEventsList() {
     </Card>
   );
 }
+
