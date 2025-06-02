@@ -68,8 +68,8 @@ export function CapturedEventsList() {
             <p>Realize uma análise ou envie evidências para ver os resultados aqui.</p>
           </div>
         ) : (
-          <ScrollArea className="h-[600px] pr-4">
-            <ul className="space-y-4">
+          <ScrollArea className="h-[600px]"> {/* Removed pr-4 */}
+            <ul className="space-y-4 pr-1"> {/* Added small pr-1 here to avoid scrollbar completely overlapping last pixel of content */}
               {analyzedEvents.map((event) => (
                 <li key={event.id} className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors">
                   <div className="flex items-center space-x-4">
@@ -81,15 +81,15 @@ export function CapturedEventsList() {
                       className="rounded-md object-cover aspect-square border border-border"
                       data-ai-hint="night sky"
                     />
-                    <div className="flex-1 min-w-0 overflow-hidden"> {/* Added overflow-hidden */}
+                    <div className="flex-1 min-w-0 overflow-hidden">
                       <h3 className="text-base font-semibold truncate text-foreground">{event.mediaName}</h3>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         {new Date(event.timestamp).toLocaleString('pt-BR')}
                       </p>
-                      <p className={`text-sm font-medium mt-1 ${event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 'text-destructive' : 'text-green-400'}`}>
+                      <p className={`text-sm font-medium mt-1 truncate ${event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 'text-destructive' : 'text-green-400'}`}>
                         Probabilidade de UAP: {(event.analysis.probabilityOfGenuineUapEvent * 100).toFixed(1)}%
-                        {event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 
-                          <AlertTriangle className="inline ml-1 h-4 w-4" /> : 
+                        {event.analysis.probabilityOfGenuineUapEvent > 0.5 ?
+                          <AlertTriangle className="inline ml-1 h-4 w-4" /> :
                           <CheckCircle2 className="inline ml-1 h-4 w-4" />
                         }
                       </p>
@@ -111,3 +111,4 @@ export function CapturedEventsList() {
     </Card>
   );
 }
+
