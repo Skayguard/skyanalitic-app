@@ -68,7 +68,7 @@ export function CapturedEventsList() {
             <p>Realize uma análise ou envie evidências para ver os resultados aqui.</p>
           </div>
         ) : (
-          <ScrollArea className="h-[400px] pr-4">
+          <ScrollArea className="h-[600px] pr-4">
             <ul className="space-y-4">
               {analyzedEvents.map((event) => (
                 <li key={event.id} className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors">
