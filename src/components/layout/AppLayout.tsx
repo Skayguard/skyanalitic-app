@@ -1,24 +1,60 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
   SidebarHeader,
   SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarInset,
   SidebarTrigger,
+  SidebarInset,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './SidebarNav';
-import { Button } from '@/components/ui/button';
-import { Binary } from 'lucide-react'; // Using Binary as a placeholder logo icon
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2, Binary } from 'lucide-react';
+
+const publicPaths = ['/login', '/register', '/verify-email'];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user && !publicPaths.includes(pathname)) {
+      router.push('/login');
+    }
+  }, [user, isLoading, pathname, router]);
+
+  if (isLoading && !publicPaths.includes(pathname)) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Se for uma rota pública e o usuário não estiver carregando (ou seja, já sabemos o estado), não renderiza o layout principal.
+  // A própria página pública (login, register) cuidará do seu layout.
+  if (publicPaths.includes(pathname) && !isLoading) {
+      return <>{children}</>;
+  }
+  
+  // Se o usuário não estiver logado e tentar acessar uma rota não pública, o useEffect acima já deve ter redirecionado.
+  // Este é um fallback ou para o caso de o redirecionamento ainda não ter ocorrido.
+  if (!user && !publicPaths.includes(pathname) && !isLoading) {
+     return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4">Redirecionando para login...</p>
+      </div>
+    );
+  }
+
+
   return (
     <SidebarProvider defaultOpen>
       <Sidebar className="border-sidebar-border">
@@ -38,7 +74,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
             {/* Can add breadcrumbs or page title here */}
           </div>
-          {/* Add User Profile / Auth button here if needed */}
+          {/* User Profile / Auth button for larger screens can be added here */}
         </header>
         <main className="flex-1 flex-col p-4 sm:p-6">
           {children}
