@@ -27,13 +27,13 @@ export function CapturedEventsList() {
         <CardContent>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center space-x-4 p-3 rounded-lg border border-border">
-                <Skeleton className="h-16 w-16 rounded-md" />
-                <div className="flex-1 space-y-2">
+              <div key={i} className="flex items-center space-x-3 p-3 rounded-lg border border-border">
+                <Skeleton className="h-12 w-12 rounded-md" /> 
+                <div className="flex-1 space-y-1">
                   <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-1/2" />
                 </div>
-                <Skeleton className="h-8 w-20 rounded-md" />
+                <Skeleton className="h-8 w-16 rounded-md" />
               </div>
             ))}
           </div>
@@ -68,36 +68,37 @@ export function CapturedEventsList() {
             <p>Realize uma análise ou envie evidências para ver os resultados aqui.</p>
           </div>
         ) : (
-          <ScrollArea className="h-[600px]"> {/* Removed pr-4 */}
-            <ul className="space-y-4 pr-1"> {/* Added small pr-1 here to avoid scrollbar completely overlapping last pixel of content */}
+          <ScrollArea className="h-[600px]">
+            <ul className="space-y-3 pr-1"> {/* Reduced space-y slightly */}
               {analyzedEvents.map((event) => (
-                <li key={event.id} className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center space-x-4">
+                <li key={event.id} className="p-3 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors"> {/* Reduced p-4 to p-3 */}
+                  <div className="flex items-center space-x-2"> {/* Reduced space-x-4 to space-x-2 */}
                     <Image
-                      src={event.thumbnailUrl || `https://placehold.co/64x64.png?text=UAP`}
+                      src={event.thumbnailUrl || `https://placehold.co/56x56.png?text=UAP`} // Slightly smaller image
                       alt={`Miniatura para ${event.mediaName}`}
-                      width={64}
-                      height={64}
-                      className="rounded-md object-cover aspect-square border border-border"
+                      width={56} // Reduced from 64
+                      height={56} // Reduced from 64
+                      className="rounded-md object-cover aspect-square border border-border flex-shrink-0" // Added flex-shrink-0
                       data-ai-hint="night sky"
                     />
                     <div className="flex-1 min-w-0 overflow-hidden">
-                      <h3 className="text-base font-semibold truncate text-foreground">{event.mediaName}</h3>
+                      <h3 className="text-sm font-semibold truncate text-foreground">{event.mediaName}</h3> {/* Changed to text-sm */}
                       <p className="text-xs text-muted-foreground truncate">
                         {new Date(event.timestamp).toLocaleString('pt-BR')}
                       </p>
-                      <p className={`text-sm font-medium mt-1 truncate ${event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 'text-destructive' : 'text-green-400'}`}>
-                        Probabilidade de UAP: {(event.analysis.probabilityOfGenuineUapEvent * 100).toFixed(1)}%
+                      <p className={`text-xs font-medium mt-0.5 truncate ${event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 'text-destructive' : 'text-green-400'}`}> {/* Changed to text-xs, mt-0.5 */}
+                        Prob: {(event.analysis.probabilityOfGenuineUapEvent * 100).toFixed(0)}% {/* Shortened "Probabilidade de UAP" & toFixed(0) */}
                         {event.analysis.probabilityOfGenuineUapEvent > 0.5 ?
-                          <AlertTriangle className="inline ml-1 h-4 w-4" /> :
-                          <CheckCircle2 className="inline ml-1 h-4 w-4" />
+                          <AlertTriangle className="inline ml-1 h-3 w-3" /> : // Smaller icon
+                          <CheckCircle2 className="inline ml-1 h-3 w-3" /> // Smaller icon
                         }
                       </p>
                     </div>
                     <Link href={`/analysis/${event.id}`} legacyBehavior passHref>
-                      <Button asChild variant="outline" size="sm" className="flex-shrink-0" aria-label={`Ver análise para ${event.mediaName}`}>
+                      <Button asChild variant="outline" size="sm" className="flex-shrink-0">
                         <a>
-                          <Eye className="mr-2 h-4 w-4" /> Ver
+                          <Eye className="mr-1 h-4 w-4" /> {/* Reduced mr-2 to mr-1 */}
+                          Ver
                         </a>
                       </Button>
                     </Link>
@@ -111,4 +112,3 @@ export function CapturedEventsList() {
     </Card>
   );
 }
-
