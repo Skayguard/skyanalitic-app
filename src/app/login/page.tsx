@@ -39,6 +39,10 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
+  const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
+    await signIn(data.email, data.password);
+  };
+
   if (authLoading) { 
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
