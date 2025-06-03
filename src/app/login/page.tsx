@@ -43,9 +43,9 @@ export default function LoginPage() {
     await signIn(data.email, data.password);
   };
 
-  if (authLoading && user === undefined) { // Mostra loading se o estado do auth ainda não foi determinado
+  if (authLoading) { // Updated guard: Show loader if auth state is still loading
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
