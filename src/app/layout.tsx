@@ -8,7 +8,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import { AuthProvider } from '@/contexts/AuthContext'; // Importar AuthProvider
 
 export const metadata: Metadata = {
-  title: 'Skyguard Analytic Analisador de UAP',
+  title: 'Skyanalytic Analisador de UAP',
   description: 'Analise avistamentos de UAP com IA',
 };
 

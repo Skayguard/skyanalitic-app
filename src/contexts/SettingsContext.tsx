@@ -13,7 +13,7 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'skyguard_analytic_app_settings';
+const LOCAL_STORAGE_KEY = 'skyanalytic_app_settings';
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);

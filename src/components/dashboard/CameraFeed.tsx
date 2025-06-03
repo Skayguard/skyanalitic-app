@@ -120,7 +120,7 @@ export function CameraFeed() {
         }
       };
       videoElement.addEventListener('seeked', onSeeked);
-      videoElement.currentTime = time; // Ensure video is seekable, may need to wait for 'canplay' or 'loadedmetadata' on tempVideoEl
+      // Ensure video is seekable, may need to wait for 'canplay' or 'loadedmetadata' on tempVideoEl
       // If issues persist, set currentTime after video is loaded and playable
       if (videoElement.readyState >= 2) { // HAVE_CURRENT_DATA or more
         videoElement.currentTime = time;
@@ -161,13 +161,10 @@ export function CameraFeed() {
         }).catch(reject);
       };
       tempVideoEl.onerror = () => reject(new Error("Falha ao carregar metadados do vídeo gravado."));
-      tempVideoEl.load();
+      tempVideoEl.load(); // Start loading
     });
   
     try {
-      // Ensure video is playable before attempting to extract frame
-      // This might involve waiting for 'canplay' or 'canplaythrough'
-      // For simplicity, we're relying on loadedmetadata and a brief play/pause
       await extractFrameAndDownload(tempVideoEl, 1, `${baseFileName}_foto.png`, canvas); // Frame at 1s
       toast({ title: "Foto Extraída", description: "1 foto foi baixada do vídeo.", duration: 3000 });
     } catch (e) {
@@ -179,7 +176,7 @@ export function CameraFeed() {
   
     // 2. Generate and download TXT file
     const technicalData = `
-Skyguard Analytic - Relatório Técnico de Captura
+Skyanalytic - Relatório Técnico de Captura
 -------------------------------------------------
 ID do Evento: ${eventId}
 Nome da Mídia: ${baseFileName}
@@ -228,7 +225,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
     const initialFrameDataUri = canvas.toDataURL('image/jpeg');
     const captureTimestamp = new Date().toISOString();
     const eventId = captureTimestamp + Math.random().toString(36).substring(2,9);
-    const mediaName = `Captura_Skyguard_${new Date(captureTimestamp).toLocaleString('pt-BR').replace(/[\/:]/g, '-').replace(/\s/g, '_')}`;
+    const mediaName = `Captura_Skyanalytic_${new Date(captureTimestamp).toLocaleString('pt-BR').replace(/[\/:]/g, '-').replace(/\s/g, '_')}`;
 
 
     // Start 5-second video recording
@@ -269,27 +266,22 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         description: err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise IA.",
         variant: "destructive",
       });
-      // Even if AI fails, we might still have the video if recording was started.
-      // The onstop handler will proceed, but analysisResult will be null.
     }
 
-    // The rest of artifact generation (video download, frame extraction, TXT)
-    // will be handled by the onstop event of the MediaRecorder.
     if (mediaRecorderRef.current) {
         mediaRecorderRef.current.onstop = async () => {
           toast({ title: "Gravação Concluída", description: "Processando vídeo gravado...", duration: 2000 });
           const videoBlob = new Blob(recordedChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'video/webm' });
           triggerDownload(videoBlob, `${mediaName}_video_5s.mp4`); 
     
-          if (analysisResult) { // Only generate artifacts if AI analysis was successful and we have data
+          if (analysisResult) { 
             await generateAndDownloadArtifacts(videoBlob, analysisResult, mediaName, captureTimestamp, eventId);
           } else {
             toast({ title: "Geração de Artefatos Ignorada", description: "Análise IA falhou, não foi possível gerar foto e TXT detalhado.", variant: "default" });
           }
-          setIsProcessingCapture(false); // End processing here
+          setIsProcessingCapture(false); 
         };
     } else {
-        // If media recorder was never set up, we can't record. End processing.
         setIsProcessingCapture(false);
     }
   };

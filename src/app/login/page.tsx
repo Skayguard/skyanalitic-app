@@ -39,11 +39,7 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
-  const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
-    await signIn(data.email, data.password);
-  };
-
-  if (authLoading) { // Updated guard: Show loader if auth state is still loading
+  if (authLoading) { 
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -58,7 +54,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
             <LogIn className="h-7 w-7 text-primary" />
-            Login Skyguard Analytic
+            Login Skyanalytic
           </CardTitle>
           <CardDescription>Acesse sua conta para continuar.</CardDescription>
         </CardHeader>

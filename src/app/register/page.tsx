@@ -42,12 +42,8 @@ export default function RegisterPage() {
       router.push('/'); // Redireciona se já estiver logado
     }
   }, [user, router]);
-
-  const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
-    await signUp(data.email, data.password);
-  };
   
-  if (authLoading) { // Updated guard: Show loader if auth state is still loading
+  if (authLoading) { 
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -62,7 +58,7 @@ export default function RegisterPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
             <UserPlus className="h-7 w-7 text-primary" />
-            Criar Conta Skyguard Analytic
+            Criar Conta Skyanalytic
           </CardTitle>
           <CardDescription>Registre-se para começar a analisar UAPs.</CardDescription>
         </CardHeader>

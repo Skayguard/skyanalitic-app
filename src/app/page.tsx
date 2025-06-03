@@ -11,7 +11,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto py-2">
-      <h1 className="text-3xl font-bold mb-8 text-foreground font-headline">Painel Skyguard Analytic</h1>
+      <h1 className="text-3xl font-bold mb-8 text-foreground font-headline">Painel Skyanalytic</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6"> {/* Alterado de lg:grid-cols-3 */}
         <div className="lg:col-span-3"> {/* Alterado de lg:col-span-2 */}
