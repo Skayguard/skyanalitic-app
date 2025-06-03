@@ -15,19 +15,38 @@ import Image from 'next/image';
 export default function AnalysisDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const { id } = params;
   const { analyzedEvents, isLoading } = useAnalyzedEvents();
   const [event, setEvent] = useState<AnalyzedEvent | null | undefined>(undefined); // undefined for loading, null for not found
 
+  // Safely extract eventId as string from params
+  let eventIdFromParams: string | undefined = undefined;
+  if (typeof params?.id === 'string') {
+    eventIdFromParams = params.id;
+  } else if (Array.isArray(params?.id) && params.id.length > 0 && typeof params.id[0] === 'string') {
+    eventIdFromParams = params.id[0];
+  }
+
   useEffect(() => {
-    if (!isLoading && id && analyzedEvents.length > 0) {
-      const foundEvent = analyzedEvents.find(e => e.id === id);
+    if (isLoading) {
+      setEvent(undefined); // Keep in loading state if context is loading
+      return;
+    }
+
+    if (!eventIdFromParams) {
+      // If no valid ID from URL, set to not found
+      setEvent(null);
+      return;
+    }
+
+    // Context is loaded and we have a valid eventIdFromParams
+    if (analyzedEvents.length > 0) {
+      const foundEvent = analyzedEvents.find(e => e.id === eventIdFromParams);
       setEvent(foundEvent || null);
-    } else if (!isLoading && analyzedEvents.length === 0 && id) {
-      // Handles case where context loads but is empty (e.g. localStorage cleared)
+    } else {
+      // Context is loaded but empty
       setEvent(null);
     }
-  }, [id, analyzedEvents, isLoading]);
+  }, [eventIdFromParams, analyzedEvents, isLoading]);
 
   if (isLoading || event === undefined) {
     return (
