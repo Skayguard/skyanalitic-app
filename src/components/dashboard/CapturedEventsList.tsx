@@ -34,7 +34,7 @@ export function CapturedEventsList() {
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
                 </div>
-                <Skeleton className="h-8 w-16 rounded-md" />
+                {/* <Skeleton className="h-8 w-16 rounded-md" /> Removed as part of making the whole item clickable */}
               </div>
             ))}
           </div>
@@ -70,24 +70,24 @@ export function CapturedEventsList() {
           </div>
         ) : (
           <ScrollArea className="h-[600px]">
-            <ul className="space-y-3 pr-1">
+            <ul className="space-y-2 pr-1"> {/* Reduced space-y slightly and added small pr for scrollbar */}
               {analyzedEvents.map((event) => (
                 <li key={event.id}>
-                  <Link href={`/analysis/${event.id}`} legacyBehavior passHref>
-                    <a className="block p-3 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background">
+                  <Link href={`/analysis/${encodeURIComponent(event.id)}`} legacyBehavior passHref>
+                    <a className="block p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background">
                       <div className="flex items-center space-x-2">
                         <Image
-                          src={event.thumbnailUrl || `https://placehold.co/56x56.png?text=UAP`}
+                          src={event.thumbnailUrl || `https://placehold.co/48x48.png?text=UAP`}
                           alt={`Miniatura para ${event.mediaName}`}
-                          width={56}
-                          height={56}
+                          width={48} // Reduced size
+                          height={48} // Reduced size
                           className="rounded-md object-cover aspect-square border border-border flex-shrink-0"
                           data-ai-hint="night sky"
                         />
                         <div className="flex-1 min-w-0 overflow-hidden">
-                          <h3 className="text-sm font-semibold truncate text-foreground">{event.mediaName}</h3>
+                          <h3 className="text-xs sm:text-sm font-semibold truncate text-foreground">{event.mediaName}</h3>
                           <p className="text-xs text-muted-foreground truncate">
-                            {new Date(event.timestamp).toLocaleString('pt-BR')}
+                            {new Date(event.timestamp).toLocaleDateString('pt-BR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                           </p>
                           <p className={cn(
                               "text-xs font-medium mt-0.5 truncate",
@@ -101,7 +101,7 @@ export function CapturedEventsList() {
                             }
                           </p>
                         </div>
-                        <Eye className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <Eye className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-1" />
                       </div>
                     </a>
                   </Link>

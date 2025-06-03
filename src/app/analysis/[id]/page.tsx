@@ -20,13 +20,25 @@ export default function AnalysisDetailsPage() {
   const [pageEventId, setPageEventId] = useState<string | undefined>(undefined);
   const [event, setEvent] = useState<AnalyzedEvent | null | undefined>(undefined); // undefined: loading, null: not found
 
-  // Effect 1: Set pageEventId from router params
+  // Effect 1: Set pageEventId from router params, ensuring it's decoded
   useEffect(() => {
     const idFromParams = params.id;
+    let rawId: string | undefined = undefined;
+
     if (Array.isArray(idFromParams)) {
-      setPageEventId(idFromParams[0]);
+      rawId = idFromParams[0];
     } else if (typeof idFromParams === 'string') {
-      setPageEventId(idFromParams);
+      rawId = idFromParams;
+    }
+
+    if (rawId) {
+      try {
+        const decodedId = decodeURIComponent(rawId);
+        setPageEventId(decodedId);
+      } catch (e) {
+        console.error("Error decoding event ID from URL:", e, "Raw ID:", rawId);
+        setPageEventId(rawId); // Fallback to rawId if decoding fails
+      }
     } else {
       setPageEventId(undefined);
     }
@@ -34,28 +46,27 @@ export default function AnalysisDetailsPage() {
 
   // Effect 2: Find event once context is loaded and pageEventId is set
   useEffect(() => {
-    // Only proceed if context is done loading and we have an ID for the page
     if (isLoadingContext) {
-      setEvent(undefined); // Still loading context
+      setEvent(undefined); 
       return;
     }
 
     if (!pageEventId) {
-      setEvent(null); // No ID from route, so not found
+      // If pageEventId is still undefined after trying to decode, it means no valid ID was found in params
+      // or params.id was undefined/empty from the start.
+      setEvent(null); 
       return;
     }
 
-    // Context loaded, and we have a pageEventId
     if (analyzedEvents && analyzedEvents.length > 0) {
       const foundEvent = analyzedEvents.find(e => e.id === pageEventId);
       setEvent(foundEvent || null);
     } else {
-      // Context loaded, but no events in the list (or list is empty)
       setEvent(null);
     }
   }, [pageEventId, analyzedEvents, isLoadingContext]);
 
-  if (event === undefined) { // Combined loading state (context or finding event)
+  if (event === undefined) { 
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-muted-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
