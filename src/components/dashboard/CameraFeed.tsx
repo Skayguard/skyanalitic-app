@@ -120,7 +120,16 @@ export function CameraFeed() {
         }
       };
       videoElement.addEventListener('seeked', onSeeked);
-      videoElement.currentTime = time;
+      videoElement.currentTime = time; // Ensure video is seekable, may need to wait for 'canplay' or 'loadedmetadata' on tempVideoEl
+      // If issues persist, set currentTime after video is loaded and playable
+      if (videoElement.readyState >= 2) { // HAVE_CURRENT_DATA or more
+        videoElement.currentTime = time;
+      } else {
+        videoElement.oncanplay = () => {
+          videoElement.currentTime = time;
+          videoElement.oncanplay = null; // remove listener
+        }
+      }
     });
   };
   
@@ -137,26 +146,33 @@ export function CameraFeed() {
     }
     const canvas = canvasRef.current;
   
-    // 1. Download 2 PNGs from video
+    // 1. Download 1 PNG from video
     const tempVideoEl = document.createElement('video');
     tempVideoEl.src = URL.createObjectURL(videoBlob);
-    tempVideoEl.muted = true;
-  
+    tempVideoEl.muted = true; // Mute to allow autoplay in some browsers if needed
+    tempVideoEl.preload = 'auto'; // Hint to browser to load metadata
+
     await new Promise<void>((resolve, reject) => {
-      tempVideoEl.onloadedmetadata = () => resolve();
+      tempVideoEl.onloadedmetadata = () => {
+        // Attempt to play and pause to ensure frames are renderable for seeking
+        tempVideoEl.play().then(() => {
+          tempVideoEl.pause();
+          resolve();
+        }).catch(reject);
+      };
       tempVideoEl.onerror = () => reject(new Error("Falha ao carregar metadados do vídeo gravado."));
-      tempVideoEl.load(); // Start loading the video
+      tempVideoEl.load();
     });
   
     try {
-      await tempVideoEl.play(); // Play to ensure frames can be captured
-      await extractFrameAndDownload(tempVideoEl, 1, `${baseFileName}_foto_1s.png`, canvas); // Frame at 1s
-      await extractFrameAndDownload(tempVideoEl, 5, `${baseFileName}_foto_5s.png`, canvas); // Frame at 5s
-      tempVideoEl.pause();
-      toast({ title: "Fotos Extraídas", description: "2 fotos foram baixadas do vídeo.", duration: 3000 });
+      // Ensure video is playable before attempting to extract frame
+      // This might involve waiting for 'canplay' or 'canplaythrough'
+      // For simplicity, we're relying on loadedmetadata and a brief play/pause
+      await extractFrameAndDownload(tempVideoEl, 1, `${baseFileName}_foto.png`, canvas); // Frame at 1s
+      toast({ title: "Foto Extraída", description: "1 foto foi baixada do vídeo.", duration: 3000 });
     } catch (e) {
-      console.error("Erro ao extrair frames:", e);
-      toast({ title: "Erro na Extração de Fotos", description: (e as Error).message, variant: "destructive" });
+      console.error("Erro ao extrair frame:", e);
+      toast({ title: "Erro na Extração de Foto", description: (e as Error).message, variant: "destructive" });
     } finally {
       URL.revokeObjectURL(tempVideoEl.src); // Clean up object URL
     }
@@ -215,17 +231,17 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
     const mediaName = `Captura_Skyguard_${new Date(captureTimestamp).toLocaleString('pt-BR').replace(/[\/:]/g, '-').replace(/\s/g, '_')}`;
 
 
-    // Start 10-second video recording
+    // Start 5-second video recording
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "inactive") {
       recordedChunksRef.current = []; // Clear previous chunks
       mediaRecorderRef.current.start();
-      toast({ title: "Gravação Iniciada", description: "Gravando vídeo de 10 segundos...", duration: 3000 });
+      toast({ title: "Gravação Iniciada", description: "Gravando vídeo de 5 segundos...", duration: 3000 });
 
       setTimeout(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
           mediaRecorderRef.current.stop();
         }
-      }, 10000); // Stop recording after 10 seconds
+      }, 5000); // Stop recording after 5 seconds
     } else {
       toast({ title: "Gravação de Vídeo", description: "Gravador de mídia não está pronto ou já está gravando.", variant: "destructive" });
     }
@@ -263,12 +279,12 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         mediaRecorderRef.current.onstop = async () => {
           toast({ title: "Gravação Concluída", description: "Processando vídeo gravado...", duration: 2000 });
           const videoBlob = new Blob(recordedChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'video/webm' });
-          triggerDownload(videoBlob, `${mediaName}_video_10s.mp4`); // Changed to mp4 for better compatibility, though it's webm
+          triggerDownload(videoBlob, `${mediaName}_video_5s.mp4`); 
     
           if (analysisResult) { // Only generate artifacts if AI analysis was successful and we have data
             await generateAndDownloadArtifacts(videoBlob, analysisResult, mediaName, captureTimestamp, eventId);
           } else {
-            toast({ title: "Geração de Artefatos Ignorada", description: "Análise IA falhou, não foi possível gerar fotos e TXT detalhado.", variant: "default" });
+            toast({ title: "Geração de Artefatos Ignorada", description: "Análise IA falhou, não foi possível gerar foto e TXT detalhado.", variant: "default" });
           }
           setIsProcessingCapture(false); // End processing here
         };
@@ -287,7 +303,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         </CardTitle>
         <CardDescription>
           Monitoramento em tempo real. Clique abaixo para capturar um quadro para análise IA,
-          gravar um vídeo de 10s, extrair 2 fotos e gerar um relatório técnico (todos para download).
+          gravar um vídeo de 5s, extrair 1 foto e gerar um relatório técnico (todos para download).
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -330,7 +346,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         </Button>
         {isProcessingCapture && (
             <div className="mt-2 text-center text-sm text-muted-foreground">
-                <p>Realizando análise IA e preparando arquivos para download (vídeo, fotos, TXT)...</p>
+                <p>Realizando análise IA e preparando arquivos para download (vídeo, foto, TXT)...</p>
                 <p>Isso pode levar alguns segundos.</p>
             </div>
         )}
@@ -338,5 +354,3 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
     </Card>
   );
 }
-
-    
