@@ -1,16 +1,16 @@
 
 'use client';
 
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UploadCloud, Loader2, AlertTriangle, FileCheck2, FileQuestion } from 'lucide-react';
+import { UploadCloud, Loader2, AlertTriangle, FileCheck2, Film, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeUapMedia, AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
-import { AnalysisReport } from './AnalysisReport'; 
+import { AnalysisReport } from './AnalysisReport';
 
 export function FileUploadForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -21,25 +21,91 @@ export function FileUploadForm() {
   const { toast } = useToast();
   const { addAnalyzedEvent } = useAnalyzedEvents();
 
+  const [extractedFrameDataUri, setExtractedFrameDataUri] = useState<string | null>(null);
+  const [isExtractingFrame, setIsExtractingFrame] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const resetFormState = () => {
+    setFile(null);
+    setPreviewUrl(null);
+    setAnalysisResult(null);
+    setError(null);
+    setExtractedFrameDataUri(null);
+    setIsExtractingFrame(false);
+  };
+
+  const extractFrameFromVideo = (videoFile: File) => {
+    const videoElement = videoRef.current;
+    const canvasElement = canvasRef.current;
+
+    if (!videoElement || !canvasElement) {
+      toast({ title: "Erro Interno", description: "Elementos de vídeo/canvas não encontrados.", variant: "destructive" });
+      setIsExtractingFrame(false);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      videoElement.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(videoFile);
+
+    videoElement.onloadeddata = () => {
+      videoElement.currentTime = 1; // Seek to 1 second
+    };
+
+    videoElement.onseeked = () => {
+      const context = canvasElement.getContext('2d');
+      if (context) {
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+        context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+        const frameDataUri = canvasElement.toDataURL('image/png');
+        setExtractedFrameDataUri(frameDataUri);
+        setPreviewUrl(frameDataUri); // Use extracted frame for preview
+        setIsExtractingFrame(false);
+        toast({ title: "Quadro Extraído", description: "Um quadro do vídeo foi extraído para análise e pré-visualização." });
+      } else {
+        toast({ title: "Erro na Extração", description: "Não foi possível obter contexto do canvas.", variant: "destructive" });
+        setIsExtractingFrame(false);
+      }
+       // Clean up video src to free resources, not strictly necessary with Data URL but good practice for Object URLs
+      if (videoElement.src.startsWith('blob:')) {
+        URL.revokeObjectURL(videoElement.src);
+      }
+    };
+
+    videoElement.onerror = () => {
+      toast({ title: "Erro de Vídeo", description: "Não foi possível carregar ou processar o vídeo.", variant: "destructive" });
+      setIsExtractingFrame(false);
+    };
+  };
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    resetFormState();
     const selectedFile = event.target.files?.[0];
+
     if (selectedFile) {
-      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
-        toast({ title: "Arquivo muito grande", description: "Por favor, selecione um arquivo menor que 10MB.", variant: "destructive" });
-        setFile(null);
-        setPreviewUrl(null);
+      if (selectedFile.size > 20 * 1024 * 1024) { // 20MB limit (increased slightly for video flexibility)
+        toast({ title: "Arquivo muito grande", description: "Por favor, selecione um arquivo menor que 20MB.", variant: "destructive" });
         return;
       }
       setFile(selectedFile);
-      setAnalysisResult(null); // Clear previous results
-      setError(null);
 
-      // Create a preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+      if (selectedFile.type.startsWith('video/')) {
+        setIsExtractingFrame(true);
+        extractFrameFromVideo(selectedFile);
+      } else if (selectedFile.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewUrl(reader.result as string);
+        };
+        reader.readAsDataURL(selectedFile);
+      } else {
+        toast({ title: "Tipo de arquivo não suportado", description: "Por favor, selecione um arquivo de imagem ou vídeo.", variant: "destructive" });
+        setFile(null);
+      }
     }
   };
 
@@ -49,48 +115,73 @@ export function FileUploadForm() {
       toast({ title: "Nenhum arquivo selecionado", description: "Por favor, selecione um arquivo para analisar.", variant: "destructive" });
       return;
     }
+    if (isExtractingFrame) {
+      toast({ title: "Aguarde", description: "Extração de quadro do vídeo em progresso.", variant: "default" });
+      return;
+    }
 
     setIsAnalyzing(true);
     setAnalysisResult(null);
     setError(null);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      const mediaDataUri = reader.result as string;
-      try {
-        const result = await analyzeUapMedia({ mediaDataUri });
-        setAnalysisResult(result);
-        const newEvent = {
-          id: new Date().toISOString() + Math.random().toString(36).substring(2,9),
-          timestamp: new Date().toISOString(),
-          thumbnailUrl: mediaDataUri.startsWith('data:image') ? mediaDataUri : `https://placehold.co/100x100.png?text=MEDIA`, // Use preview if image
-          mediaName: file.name,
-          analysis: result,
-        };
-        addAnalyzedEvent(newEvent);
-        toast({
-          title: "Análise Concluída",
-          description: `Probabilidade de UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
-        });
-      } catch (err) {
-        console.error("Falha na análise IA:", err);
-        const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise IA.";
-        setError(errorMessage);
-        toast({
-          title: "Falha na Análise",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } finally {
+    let mediaDataUriForAnalysis: string | null = null;
+
+    if (file.type.startsWith('video/')) {
+      if (!extractedFrameDataUri) {
+        setError("Quadro do vídeo não foi extraído. Tente reenviar o arquivo.");
+        toast({ title: "Erro na Preparação", description: "Quadro do vídeo não disponível para análise.", variant: "destructive" });
         setIsAnalyzing(false);
+        return;
       }
-    };
-    reader.onerror = () => {
-      setError("Falha ao ler o arquivo.");
-      toast({ title: "Erro de Leitura do Arquivo", description: "Não foi possível ler o arquivo selecionado.", variant: "destructive" });
+      mediaDataUriForAnalysis = extractedFrameDataUri;
+    } else if (file.type.startsWith('image/')) {
+      // For images, previewUrl already holds the data URI
+      if (!previewUrl) {
+         // This case should ideally not happen if file is set and is an image, means FileReader failed.
+        setError("Falha ao ler o arquivo de imagem.");
+        toast({ title: "Erro de Leitura do Arquivo", description: "Não foi possível ler o arquivo de imagem selecionado.", variant: "destructive" });
+        setIsAnalyzing(false);
+        return;
+      }
+      mediaDataUriForAnalysis = previewUrl;
+    }
+
+    if (!mediaDataUriForAnalysis) {
+      setError("Mídia para análise não está pronta.");
+      toast({ title: "Erro de Preparação", description: "Não há dados de mídia prontos para análise.", variant: "destructive" });
       setIsAnalyzing(false);
-    };
+      return;
+    }
+
+
+    try {
+      const result = await analyzeUapMedia({ mediaDataUri: mediaDataUriForAnalysis });
+      setAnalysisResult(result);
+      const newEventId = new Date().toISOString() + Math.random().toString(36).substring(2, 9);
+      const newEvent = {
+        id: newEventId,
+        timestamp: new Date().toISOString(),
+        thumbnailUrl: file.type.startsWith('video/') ? extractedFrameDataUri : previewUrl,
+        mediaName: file.name,
+        analysis: result,
+      };
+      addAnalyzedEvent(newEvent);
+      toast({
+        title: "Análise Concluída",
+        description: `Probabilidade de UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
+      });
+    } catch (err) {
+      console.error("Falha na análise IA:", err);
+      const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise IA.";
+      setError(errorMessage);
+      toast({
+        title: "Falha na Análise",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -101,10 +192,14 @@ export function FileUploadForm() {
           Enviar Evidência para Análise
         </CardTitle>
         <CardDescription>
-          Envie manualmente um vídeo ou foto (máx. 10MB) de um potencial UAP para análise por IA.
+          Envie manualmente um vídeo ou foto (máx. 20MB) de um potencial UAP. Um quadro será extraído de vídeos para análise.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Hidden elements for video/canvas processing */}
+        <video ref={videoRef} style={{ display: 'none' }} crossOrigin="anonymous" muted playsInline />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="file-upload" className="text-sm font-medium text-foreground">
@@ -118,33 +213,51 @@ export function FileUploadForm() {
               className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               aria-describedby="file-upload-help"
             />
-            <p id="file-upload-help" className="mt-1 text-xs text-muted-foreground">Formatos suportados: JPG, PNG, MP4, MOV, etc. Máx 10MB.</p>
+            <p id="file-upload-help" className="mt-1 text-xs text-muted-foreground">Formatos suportados: JPG, PNG, MP4, MOV, etc. Máx 20MB.</p>
           </div>
 
-          {previewUrl && file && (
-            <div className="mt-4 p-4 border border-border rounded-md bg-muted/30">
-              <h4 className="text-sm font-medium text-foreground mb-2">Pré-visualização do Arquivo:</h4>
-              {file.type.startsWith('image/') ? (
-                <img src={previewUrl} alt="Pré-visualização do arquivo" className="max-h-60 w-auto rounded-md border border-border" />
-              ) : (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <FileQuestion className="h-10 w-10" />
-                  <div>
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-xs">Pré-visualização de vídeo não disponível aqui.</p>
-                  </div>
+          {file && (
+            <div className="mt-4 p-4 border border-border rounded-md bg-muted/30 min-h-[150px] flex flex-col justify-center items-center">
+              <h4 className="text-sm font-medium text-foreground mb-2 self-start">Pré-visualização:</h4>
+              {isExtractingFrame && file.type.startsWith('video/') && (
+                <div className="flex flex-col items-center text-muted-foreground">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mb-2" />
+                  <p>Extraindo quadro do vídeo...</p>
+                  <Film className="h-8 w-8 mt-1" />
                 </div>
+              )}
+              {!isExtractingFrame && previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Pré-visualização do arquivo"
+                  className="max-h-60 w-auto rounded-md border border-border"
+                  data-ai-hint={file.type.startsWith('video/') ? "video still frame" : "uploaded image"}
+                />
+              )}
+              {!isExtractingFrame && !previewUrl && file.type.startsWith('video/') && (
+                 <div className="flex flex-col items-center text-muted-foreground">
+                    <Film className="h-10 w-10 mb-2" />
+                    <p>Pronto para extrair quadro do vídeo.</p>
+                 </div> 
+              )}
+               {!isExtractingFrame && !previewUrl && file.type.startsWith('image/') && (
+                 <div className="flex flex-col items-center text-muted-foreground">
+                    <ImageIcon className="h-10 w-10 mb-2" />
+                    <p>Processando imagem...</p> {/* Should be quick */}
+                 </div>
               )}
             </div>
           )}
 
-          <Button type="submit" disabled={!file || isAnalyzing} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button type="submit" disabled={!file || isAnalyzing || isExtractingFrame} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
             {isAnalyzing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : isExtractingFrame ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <UploadCloud className="mr-2 h-4 w-4" />
             )}
-            {isAnalyzing ? 'Analisando...' : 'Enviar & Analisar'}
+            {isAnalyzing ? 'Analisando...' : isExtractingFrame ? 'Processando Vídeo...' : 'Enviar & Analisar'}
           </Button>
         </form>
 
@@ -152,7 +265,7 @@ export function FileUploadForm() {
           <div className="mt-6 p-4 bg-destructive/10 border border-destructive text-destructive rounded-md flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold">Erro na Análise</h4>
+              <h4 className="font-semibold">Erro</h4>
               <p className="text-sm">{error}</p>
             </div>
           </div>
@@ -171,3 +284,4 @@ export function FileUploadForm() {
     </Card>
   );
 }
+
