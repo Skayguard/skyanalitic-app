@@ -62,7 +62,7 @@ export default function RegisterPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
             <UserPlus className="h-7 w-7 text-primary" />
-            Criar Conta Skywatch
+            Criar Conta Skyguard Analytic
           </CardTitle>
           <CardDescription>Registre-se para começar a analisar UAPs.</CardDescription>
         </CardHeader>

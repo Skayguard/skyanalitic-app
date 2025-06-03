@@ -61,7 +61,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors">
             <Binary className="h-7 w-7 text-primary" />
-            <span className="font-headline">Skywatch</span>
+            <span className="font-headline">Skyguard Analytic</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>

@@ -13,7 +13,7 @@ interface AnalyzedEventsContextType {
 
 const AnalyzedEventsContext = createContext<AnalyzedEventsContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'skywatch_analyzed_events';
+const LOCAL_STORAGE_KEY = 'skyguard_analytic_analyzed_events';
 
 export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
   const [analyzedEvents, setAnalyzedEvents] = useState<AnalyzedEvent[]>([]);
