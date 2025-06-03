@@ -8,7 +8,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import { AuthProvider } from '@/contexts/AuthContext'; // Importar AuthProvider
 
 export const metadata: Metadata = {
-  title: 'Skyanalytic Analisador de UAP',
+  title: 'Skyanalytic',
   description: 'Analise avistamentos de UAP com IA',
 };
 
@@ -37,3 +37,4 @@ export default function RootLayout({
     </html>
   );
 }
+
