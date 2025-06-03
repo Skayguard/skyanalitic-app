@@ -14,41 +14,48 @@ import Image from 'next/image';
 
 export default function AnalysisDetailsPage() {
   const router = useRouter();
-  const params = useParams();
-  const { analyzedEvents, isLoading } = useAnalyzedEvents();
-  const [event, setEvent] = useState<AnalyzedEvent | null | undefined>(undefined); // undefined for loading, null for not found
+  const params = useParams<{ id?: string | string[] }>();
+  const { analyzedEvents, isLoading: isLoadingContext } = useAnalyzedEvents();
+  
+  const [pageEventId, setPageEventId] = useState<string | undefined>(undefined);
+  const [event, setEvent] = useState<AnalyzedEvent | null | undefined>(undefined); // undefined: loading, null: not found
 
-  // Safely extract eventId as string from params
-  let eventIdFromParams: string | undefined = undefined;
-  if (typeof params?.id === 'string') {
-    eventIdFromParams = params.id;
-  } else if (Array.isArray(params?.id) && params.id.length > 0 && typeof params.id[0] === 'string') {
-    eventIdFromParams = params.id[0];
-  }
-
+  // Effect 1: Set pageEventId from router params
   useEffect(() => {
-    if (isLoading) {
-      setEvent(undefined); // Keep in loading state if context is loading
+    const idFromParams = params.id;
+    if (Array.isArray(idFromParams)) {
+      setPageEventId(idFromParams[0]);
+    } else if (typeof idFromParams === 'string') {
+      setPageEventId(idFromParams);
+    } else {
+      setPageEventId(undefined);
+    }
+  }, [params.id]);
+
+  // Effect 2: Find event once context is loaded and pageEventId is set
+  useEffect(() => {
+    // Only proceed if context is done loading and we have an ID for the page
+    if (isLoadingContext) {
+      setEvent(undefined); // Still loading context
       return;
     }
 
-    if (!eventIdFromParams) {
-      // If no valid ID from URL, set to not found
-      setEvent(null);
+    if (!pageEventId) {
+      setEvent(null); // No ID from route, so not found
       return;
     }
 
-    // Context is loaded and we have a valid eventIdFromParams
-    if (analyzedEvents.length > 0) {
-      const foundEvent = analyzedEvents.find(e => e.id === eventIdFromParams);
+    // Context loaded, and we have a pageEventId
+    if (analyzedEvents && analyzedEvents.length > 0) {
+      const foundEvent = analyzedEvents.find(e => e.id === pageEventId);
       setEvent(foundEvent || null);
     } else {
-      // Context is loaded but empty
+      // Context loaded, but no events in the list (or list is empty)
       setEvent(null);
     }
-  }, [eventIdFromParams, analyzedEvents, isLoading]);
+  }, [pageEventId, analyzedEvents, isLoadingContext]);
 
-  if (isLoading || event === undefined) {
+  if (event === undefined) { // Combined loading state (context or finding event)
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-muted-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -63,7 +70,7 @@ export default function AnalysisDetailsPage() {
         <AlertTriangle className="h-16 w-16 text-destructive mb-6" />
         <h1 className="text-3xl font-bold mb-4 text-foreground">Análise Não Encontrada</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          O relatório de análise que você está procurando não existe ou não pôde ser carregado.
+          O relatório de análise que você está procurando não existe ou não pôde ser carregado. (ID: {pageEventId || 'N/A'})
         </p>
         <Button asChild variant="outline">
           <Link href="/">
