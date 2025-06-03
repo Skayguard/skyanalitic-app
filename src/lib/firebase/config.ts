@@ -2,7 +2,7 @@
 // @/lib/firebase/config.ts
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-// import { getFirestore, Firestore } from 'firebase/firestore'; // Descomente se precisar do Firestore
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,7 +15,7 @@ const firebaseConfig = {
 
 let app: FirebaseApp;
 let auth: Auth;
-// let db: Firestore; // Descomente se precisar do Firestore
+let db: Firestore;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
@@ -24,6 +24,7 @@ if (!getApps().length) {
 }
 
 auth = getAuth(app);
-// db = getFirestore(app); // Descomente se precisar do Firestore
+db = getFirestore(app);
 
-export { app, auth /*, db */ };
+export { app, auth, db };
+
