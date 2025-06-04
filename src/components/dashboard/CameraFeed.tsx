@@ -8,7 +8,8 @@ import { Camera, VideoOff, Zap, Loader2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeUapMedia, type AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
-import { useSettings } from '@/contexts/SettingsContext'; // Import useSettings
+import { useSettings } from '@/contexts/SettingsContext'; 
+import { AnalysisType } from '@/lib/types'; // Import AnalysisType
 
 export function CameraFeed() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -18,7 +19,7 @@ export function CameraFeed() {
   const [isProcessingCapture, setIsProcessingCapture] = useState(false);
   const { toast } = useToast();
   const { addAnalyzedEvent } = useAnalyzedEvents();
-  const { settings } = useSettings(); // Get settings
+  const { settings } = useSettings(); 
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -45,7 +46,7 @@ export function CameraFeed() {
             setError(null);
 
             // Setup MediaRecorder
-            const options = { mimeType: 'video/webm; codecs=vp9' }; // vp9 for better quality/compression if available
+            const options = { mimeType: 'video/webm; codecs=vp9' }; 
             try {
                mediaRecorderRef.current = new MediaRecorder(stream, options);
             } catch (e1) {
@@ -60,7 +61,7 @@ export function CameraFeed() {
                  } catch (e3) {
                     console.error("WebM not supported, video recording might fail or have issues.", e3);
                     toast({title: "Gravação de Vídeo", description: "Formato WebM não suportado, gravação pode falhar.", variant: "destructive"});
-                    mediaRecorderRef.current = null; // Explicitly nullify if no suitable recorder found
+                    mediaRecorderRef.current = null; 
                  }
               }
             }
@@ -120,14 +121,13 @@ export function CameraFeed() {
         }
       };
       videoElement.addEventListener('seeked', onSeeked);
-      // Ensure video is seekable, may need to wait for 'canplay' or 'loadedmetadata' on tempVideoEl
-      // If issues persist, set currentTime after video is loaded and playable
-      if (videoElement.readyState >= 2) { // HAVE_CURRENT_DATA or more
+      
+      if (videoElement.readyState >= 2) { 
         videoElement.currentTime = time;
       } else {
         videoElement.oncanplay = () => {
           videoElement.currentTime = time;
-          videoElement.oncanplay = null; // remove listener
+          videoElement.oncanplay = null; 
         }
       }
     });
@@ -146,35 +146,35 @@ export function CameraFeed() {
     }
     const canvas = canvasRef.current;
   
-    // 1. Download 1 PNG from video
+    
     const tempVideoEl = document.createElement('video');
     tempVideoEl.src = URL.createObjectURL(videoBlob);
-    tempVideoEl.muted = true; // Mute to allow autoplay in some browsers if needed
-    tempVideoEl.preload = 'auto'; // Hint to browser to load metadata
+    tempVideoEl.muted = true; 
+    tempVideoEl.preload = 'auto'; 
 
     await new Promise<void>((resolve, reject) => {
       tempVideoEl.onloadedmetadata = () => {
-        // Attempt to play and pause to ensure frames are renderable for seeking
+        
         tempVideoEl.play().then(() => {
           tempVideoEl.pause();
           resolve();
         }).catch(reject);
       };
       tempVideoEl.onerror = () => reject(new Error("Falha ao carregar metadados do vídeo gravado."));
-      tempVideoEl.load(); // Start loading
+      tempVideoEl.load(); 
     });
   
     try {
-      await extractFrameAndDownload(tempVideoEl, 1, `${baseFileName}_foto.png`, canvas); // Frame at 1s
+      await extractFrameAndDownload(tempVideoEl, 1, `${baseFileName}_foto.png`, canvas); 
       toast({ title: "Foto Extraída", description: "1 foto foi baixada do vídeo.", duration: 3000 });
     } catch (e) {
       console.error("Erro ao extrair frame:", e);
       toast({ title: "Erro na Extração de Foto", description: (e as Error).message, variant: "destructive" });
     } finally {
-      URL.revokeObjectURL(tempVideoEl.src); // Clean up object URL
+      URL.revokeObjectURL(tempVideoEl.src); 
     }
   
-    // 2. Generate and download TXT file
+    
     const technicalData = `
 Skyanalytic - Relatório Técnico de Captura
 -------------------------------------------------
@@ -228,9 +228,9 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
     const mediaName = `Captura_Skyanalytic_${new Date(captureTimestamp).toLocaleString('pt-BR').replace(/[\/:]/g, '-').replace(/\s/g, '_')}`;
 
 
-    // Start 5-second video recording
+    
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "inactive") {
-      recordedChunksRef.current = []; // Clear previous chunks
+      recordedChunksRef.current = []; 
       mediaRecorderRef.current.start();
       toast({ title: "Gravação Iniciada", description: "Gravando vídeo de 5 segundos...", duration: 3000 });
 
@@ -238,12 +238,12 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
           mediaRecorderRef.current.stop();
         }
-      }, 5000); // Stop recording after 5 seconds
+      }, 5000); 
     } else {
       toast({ title: "Gravação de Vídeo", description: "Gravador de mídia não está pronto ou já está gravando.", variant: "destructive" });
     }
 
-    // AI Analysis (happens in parallel with recording being finalized)
+    
     let analysisResult: AnalyzeUapMediaOutput | null = null;
     try {
       analysisResult = await analyzeUapMedia({ mediaDataUri: initialFrameDataUri });
@@ -253,6 +253,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         thumbnailUrl: initialFrameDataUri,
         mediaName: mediaName,
         analysis: analysisResult,
+        analysisType: AnalysisType.UAP, // Added analysisType
       };
       addAnalyzedEvent(newEvent);
       toast({

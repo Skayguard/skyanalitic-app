@@ -2,8 +2,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import type { AnalyzedEvent, AnalysisType } from '@/lib/types'; // Import AnalysisType
-import { db } from '@/lib/firebase/config';
+import type { AnalyzedEvent, AnalysisType, AnalyzeUapMediaOutput, AnalyzeObjectTrailOutput } from '@/lib/types';
+import { db, storage } from '@/lib/firebase/config'; // Import storage
 import { useAuth } from './AuthContext';
 import { 
   collection, 
@@ -17,7 +17,8 @@ import {
   doc,
   writeBatch
 } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
+import { ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage"; // Import storage functions
+import { useToast as useShadcnToast } from '@/hooks/use-toast'; // Renamed to avoid conflict
 
 interface AnalyzedEventsContextType {
   analyzedEvents: AnalyzedEvent[];
@@ -30,11 +31,46 @@ const AnalyzedEventsContext = createContext<AnalyzedEventsContextType | undefine
 
 const EVENTS_COLLECTION = 'skyanalytic_analyzed_events';
 
+// Helper function to upload Data URI to Firebase Storage if needed
+const uploadDataUriToStorageIfNeeded = async (
+  url: string | undefined,
+  userId: string,
+  eventId: string,
+  filename: string,
+  toast: ReturnType<typeof useShadcnToast>['toast'] 
+): Promise<string | undefined> => {
+  console.log('[DEBUG] uploadDataUriToStorageIfNeeded: Received URL (first 100 chars):', typeof url === 'string' ? url.substring(0, 100) : url);
+  console.log('[DEBUG] uploadDataUriToStorageIfNeeded: URL type:', typeof url, 'Is Data URI:', typeof url === 'string' && url.startsWith('data:'));
+
+  if (typeof url === 'string' && url.startsWith('data:')) {
+    const storagePath = `userEvents/${userId}/${eventId}/${filename}`;
+    const storageRef = ref(storage, storagePath);
+    try {
+      console.log(`[DEBUG] Uploading to Storage: ${storagePath}`);
+      await uploadString(storageRef, url, 'data_url');
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(`[DEBUG] Upload successful. Storage URL: ${downloadURL}`);
+      return downloadURL;
+    } catch (uploadError) {
+      console.error(`[DEBUG] Error uploading ${filename} to Firebase Storage:`, uploadError);
+      toast({
+        title: `Erro no Upload de ${filename}`,
+        description: (uploadError as Error).message,
+        variant: "destructive",
+      });
+      return `https://placehold.co/300x200.png?text=ErroUpload`; // Return a placeholder on error
+    }
+  }
+  console.log('[DEBUG] uploadDataUriToStorageIfNeeded: URL is not a Data URI or undefined, returning as is:', url);
+  return url; // If not a data URI or undefined, return original
+};
+
+
 export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
   const [analyzedEvents, setAnalyzedEvents] = useState<AnalyzedEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, isLoading: authIsLoading } = useAuth();
-  const { toast } = useToast();
+  const { toast } = useShadcnToast();
 
   const fetchEvents = useCallback(async () => {
     if (!user) {
@@ -57,7 +93,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
           id: data.id, 
           firestoreDocId: docSnap.id, 
           timestamp: (data.timestamp as Timestamp).toDate().toISOString(), 
-        } as AnalyzedEvent; // Type assertion here
+        } as AnalyzedEvent; 
       });
       setAnalyzedEvents(eventsFromFirestore);
     } catch (error) {
@@ -90,21 +126,54 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
     }
     
     setIsLoading(true); 
-    const eventWithUserAndTimestamp: Omit<AnalyzedEvent, 'firestoreDocId'> & { userId: string; timestamp: Timestamp } = {
+    const newEventId = eventData.id; // Use the pre-generated ID
+
+    // Upload thumbnail to Firebase Storage if it's a Data URI
+    const storageThumbnailUrl = await uploadDataUriToStorageIfNeeded(
+      eventData.thumbnailUrl,
+      user.uid,
+      newEventId,
+      'thumbnail.png', // Generic name for UAP thumbnails or fallback for trail
+      toast
+    );
+
+    // Process analysis data, uploading trailImageUri if it's a Trail analysis and a Data URI
+    let processedAnalysis = eventData.analysis;
+    if (eventData.analysisType === AnalysisType.TRAIL && (eventData.analysis as AnalyzeObjectTrailOutput).trailImageUri) {
+      const trailAnalysis = eventData.analysis as AnalyzeObjectTrailOutput;
+      const storageTrailImageUri = await uploadDataUriToStorageIfNeeded(
+        trailAnalysis.trailImageUri,
+        user.uid,
+        newEventId,
+        'trailImage.png',
+        toast
+      );
+      processedAnalysis = { ...trailAnalysis, trailImageUri: storageTrailImageUri };
+    }
+    
+    const eventToSave: Omit<AnalyzedEvent, 'firestoreDocId'> = {
       ...eventData,
+      id: newEventId,
       userId: user.uid,
-      timestamp: Timestamp.fromDate(new Date(eventData.timestamp)), 
+      timestamp: Timestamp.fromDate(new Date(eventData.timestamp)) as any, // Firestore expects Timestamp
+      analysisType: eventData.analysisType,
+      thumbnailUrl: storageThumbnailUrl,
+      analysis: processedAnalysis,
     };
 
+    console.log('[DEBUG] Attempting to save to Firestore. Thumbnail URL:', eventToSave.thumbnailUrl);
+    if (eventToSave.analysisType === AnalysisType.TRAIL) {
+      console.log('[DEBUG] Trail Analysis - Trail Image URL:', (eventToSave.analysis as AnalyzeObjectTrailOutput).trailImageUri);
+    }
+
+
     try {
-      const docRef = await addDoc(collection(db, EVENTS_COLLECTION), eventWithUserAndTimestamp);
+      const docRef = await addDoc(collection(db, EVENTS_COLLECTION), eventToSave);
       
-      // Create the full event object for local state, ensuring all fields are present
       const newEventForState: AnalyzedEvent = {
-        ...(eventData as Omit<AnalyzedEvent, 'id' | 'firestoreDocId' | 'userId'> & { id: string }), // Cast to ensure all base fields
-        userId: user.uid, // Add userId
-        firestoreDocId: docRef.id, // Add firestoreDocId
-        timestamp: eventData.timestamp, // Keep ISO string for local state consistency before re-fetch
+        ...eventToSave,
+        firestoreDocId: docRef.id,
+        timestamp: eventData.timestamp, // Keep ISO string for local state consistency
       };
 
       setAnalyzedEvents(prevEvents => 
@@ -119,7 +188,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       console.error("Failed to save analyzed event to Firestore", error);
       toast({
         title: "Erro ao Salvar Evento",
-        description: "Não foi possível salvar sua análise na nuvem. Tente novamente.",
+        description: `Não foi possível salvar sua análise na nuvem. Detalhe: ${(error as Error).message}`,
         variant: "destructive",
       });
     } finally {
@@ -129,11 +198,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
 
   const clearAllEvents = async () => {
     if (!user) {
-      toast({
-        title: "Usuário não autenticado",
-        description: "Faça login para gerenciar seus eventos.",
-        variant: "destructive",
-      });
+      toast({ title: "Usuário não autenticado", description: "Faça login para gerenciar seus eventos.", variant: "destructive" });
       return;
     }
     setIsLoading(true);
@@ -149,14 +214,49 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       }
 
       const batch = writeBatch(db);
+      const storagePathsToDelete: string[] = [];
+
       querySnapshot.docs.forEach(docSnap => {
+        const event = docSnap.data() as AnalyzedEvent;
         batch.delete(doc(db, EVENTS_COLLECTION, docSnap.id));
+        
+        // Collect paths for storage deletion
+        const eventIdForStorage = event.id; 
+        if (event.thumbnailUrl && event.thumbnailUrl.includes('firebasestorage.googleapis.com')) {
+            storagePathsToDelete.push(`userEvents/${user.uid}/${eventIdForStorage}/thumbnail.png`);
+            // Also try common name for trail if it happens to be in thumbnail
+             if (event.analysisType === AnalysisType.TRAIL) {
+                 storagePathsToDelete.push(`userEvents/${user.uid}/${eventIdForStorage}/trailImage.png`);
+             }
+        }
+        if (event.analysisType === AnalysisType.TRAIL) {
+          const trailAnalysis = event.analysis as AnalyzeObjectTrailOutput;
+          if (trailAnalysis.trailImageUri && trailAnalysis.trailImageUri.includes('firebasestorage.googleapis.com')) {
+            storagePathsToDelete.push(`userEvents/${user.uid}/${eventIdForStorage}/trailImage.png`);
+          }
+        }
       });
+      
       await batch.commit();
+
+      // Delete from Storage
+      for (const storagePath of [...new Set(storagePathsToDelete)]) { // Deduplicate paths
+        try {
+          const fileRef = ref(storage, storagePath);
+          await deleteObject(fileRef);
+          console.log(`[DEBUG] Deleted from Storage: ${storagePath}`);
+        } catch (storageError: any) {
+          // Log non-critical errors (e.g., file not found if already deleted or path incorrect)
+          if (storageError.code !== 'storage/object-not-found') {
+            console.warn(`[DEBUG] Failed to delete ${storagePath} from Storage:`, storageError);
+          }
+        }
+      }
+
       setAnalyzedEvents([]);
       toast({
         title: "Eventos Limpos",
-        description: "Todos os seus eventos analisados foram removidos da nuvem.",
+        description: "Todos os seus eventos analisados foram removidos da nuvem e do armazenamento.",
       });
     } catch (error) {
       console.error("Failed to clear all events from Firestore", error);
