@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { analyzeUapMedia, AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
 import { AnalysisReport } from './AnalysisReport';
+import { AnalysisType } from '@/lib/types'; // Import AnalysisType
 
 export function FileUploadForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -48,21 +49,33 @@ export function FileUploadForm() {
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        videoElement.src = e.target?.result as string;
+        if (e.target && typeof e.target.result === 'string') {
+          videoElement.src = e.target.result;
+        } else {
+          reject(new Error("Falha ao ler o arquivo de vídeo. Resultado inesperado do FileReader."));
+          return;
+        }
       };
       reader.onerror = () => reject(new Error("Falha ao ler o arquivo de vídeo."));
       reader.readAsDataURL(videoFile);
       
       videoElement.onloadeddata = () => {
-        // Ensure video duration is available and seek to the desired time
-        if (videoElement.duration < timeInSeconds && videoElement.duration > 0) {
-            videoElement.currentTime = videoElement.duration / 2; // Use midpoint if video is shorter than target time
-        } else if (videoElement.duration === 0 && timeInSeconds > 0) {
-             videoElement.currentTime = 0.1; // Fallback for very short or problematic videos
+        const duration = videoElement.duration;
+        let effectiveTimeInSeconds = timeInSeconds;
+
+        // Ensure video is seekable and try to get a frame
+        // If duration is invalid or very short, try to get a frame near the beginning.
+        if (!isFinite(duration) || duration <= 0) {
+          effectiveTimeInSeconds = 0.1; // Try for a very early frame
+        } else if (timeInSeconds >= duration) {
+          // If requested time is beyond or at video end, try midpoint or very early if too short
+          effectiveTimeInSeconds = Math.max(0.1, duration / 2); 
+        } else {
+          // Ensure we don't seek to 0 if 0 was passed, as 0.1 is safer for 'seeked' event
+          effectiveTimeInSeconds = Math.max(0.1, timeInSeconds); 
         }
-        else {
-            videoElement.currentTime = timeInSeconds;
-        }
+        
+        videoElement.currentTime = effectiveTimeInSeconds;
       };
 
       videoElement.onseeked = () => {
@@ -93,7 +106,7 @@ export function FileUploadForm() {
                 case MediaError.MEDIA_ERR_NETWORK: errorMsg = "Erro de rede durante o download do vídeo."; break;
                 case MediaError.MEDIA_ERR_DECODE: errorMsg = "Erro ao decodificar o vídeo. Formato pode não ser suportado ou arquivo corrompido."; break;
                 case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: errorMsg = "Formato de vídeo não suportado."; break;
-                default: errorMsg = "Erro desconhecido ao carregar o vídeo.";
+                default: errorMsg = `Erro desconhecido ao carregar o vídeo (código: ${videoElement.error.code}).`;
             }
         }
         reject(new Error(errorMsg));
@@ -166,14 +179,15 @@ export function FileUploadForm() {
       const result = await analyzeUapMedia({ mediaDataUri: previewUrl });
       setAnalysisResult(result);
       const newEventId = new Date().toISOString() + Math.random().toString(36).substring(2, 9);
-      const newEvent = {
+      
+      await addAnalyzedEvent({
         id: newEventId,
         timestamp: new Date().toISOString(),
         thumbnailUrl: previewUrl, // Use the (potentially extracted) previewUrl as thumbnail
         mediaName: file.name,
+        analysisType: AnalysisType.UAP, // Explicitly set type for this form
         analysis: result,
-      };
-      await addAnalyzedEvent(newEvent); // Make sure addAnalyzedEvent is async if it interacts with Firestore
+      });
       toast({
         title: "Análise Concluída",
         description: `Probabilidade de UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
@@ -293,3 +307,5 @@ export function FileUploadForm() {
     </Card>
   );
 }
+
+    
