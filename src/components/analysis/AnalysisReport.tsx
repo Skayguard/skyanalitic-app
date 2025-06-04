@@ -15,7 +15,12 @@ interface AnalysisReportProps {
 }
 
 export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisReportProps) {
-  const probabilityPercent = analysis.probabilityOfGenuineUapEvent * 100;
+  const probabilityValue = analysis.probabilityOfGenuineUapEvent;
+  const probabilityPercent = 
+    probabilityValue !== undefined && probabilityValue !== null
+      ? probabilityValue * 100
+      : 0; // Default to 0 if undefined or null
+
   const isHighProbability = probabilityPercent > 50;
 
   const DetailItem: React.FC<{ icon: React.ElementType, label: string, value: string | number | React.ReactNode, valueClassName?: string }> = ({ icon: Icon, label, value, valueClassName }) => (
@@ -64,15 +69,15 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
           <DetailItem
             icon={FileText}
             label="Resumo"
-            value={<p className="leading-relaxed">{analysis.summary}</p>}
+            value={<p className="leading-relaxed">{analysis.summary || "Não disponível"}</p>}
           />
           <DetailItem
-            icon={BrainCircuit} // Re-using, consider a different icon for "Anomaly Grade"
+            icon={BrainCircuit} 
             label="Grau de Anomalia"
-            value={<Badge variant={isHighProbability ? "destructive" : "secondary"} className="text-sm">{analysis.anomalyGrade}</Badge>}
+            value={analysis.anomalyGrade ? <Badge variant={isHighProbability ? "destructive" : "secondary"} className="text-sm">{analysis.anomalyGrade}</Badge> : "Não disponível"}
           />
           <DetailItem
-            icon={FileText} // Re-using, consider a different icon for "Technical Details"
+            icon={FileText} 
             label="Detalhes Técnicos"
             value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.technicalDetails || "Não disponível"}</p>}
           />
