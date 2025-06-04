@@ -4,13 +4,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AnalysisReport } from '@/components/analysis/AnalysisReport';
+import { TrailAnalysisReport } from '@/components/trail-analysis/TrailAnalysisReport';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
 import type { AnalyzedEvent } from '@/lib/types';
+import { AnalysisType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertTriangle, Loader2 } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Loader2, GitCommitHorizontal, Search } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
+import type { AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
+import type { AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
+
 
 export default function AnalysisDetailsPage() {
   const router = useRouter();
@@ -20,7 +25,6 @@ export default function AnalysisDetailsPage() {
   const [pageEventId, setPageEventId] = useState<string | undefined>(undefined);
   const [event, setEvent] = useState<AnalyzedEvent | null | undefined>(undefined); // undefined: loading, null: not found
 
-  // Effect 1: Set pageEventId from router params, ensuring it's decoded
   useEffect(() => {
     const idFromParams = params.id;
     let rawId: string | undefined = undefined;
@@ -37,14 +41,13 @@ export default function AnalysisDetailsPage() {
         setPageEventId(decodedId);
       } catch (e) {
         console.error("Error decoding event ID from URL:", e, "Raw ID:", rawId);
-        setPageEventId(rawId); // Fallback to rawId if decoding fails
+        setPageEventId(rawId); 
       }
     } else {
       setPageEventId(undefined);
     }
   }, [params.id]);
 
-  // Effect 2: Find event once context is loaded and pageEventId is set
   useEffect(() => {
     if (isLoadingContext) {
       setEvent(undefined); 
@@ -52,8 +55,6 @@ export default function AnalysisDetailsPage() {
     }
 
     if (!pageEventId) {
-      // If pageEventId is still undefined after trying to decode, it means no valid ID was found in params
-      // or params.id was undefined/empty from the start.
       setEvent(null); 
       return;
     }
@@ -62,11 +63,12 @@ export default function AnalysisDetailsPage() {
       const foundEvent = analyzedEvents.find(e => e.id === pageEventId);
       setEvent(foundEvent || null);
     } else {
-      setEvent(null);
+      // If context is loaded but analyzedEvents is empty, and we have a pageEventId, it's not found.
+      if(!isLoadingContext) setEvent(null);
     }
   }, [pageEventId, analyzedEvents, isLoadingContext]);
 
-  if (event === undefined) { 
+  if (event === undefined || isLoadingContext) { 
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-muted-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -92,6 +94,23 @@ export default function AnalysisDetailsPage() {
     );
   }
 
+  const getReportTitle = () => {
+    if (event.analysisType === AnalysisType.TRAIL) {
+      return (
+        <div className="flex items-center gap-2">
+          <GitCommitHorizontal className="h-5 w-5 text-primary" />
+          Detalhes da Análise de Rastro
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2">
+         <Search className="h-5 w-5 text-primary" />
+         Detalhes da Análise UAP
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto py-2">
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
@@ -101,8 +120,13 @@ export default function AnalysisDetailsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
           <Card className="shadow-lg sticky top-20">
-            <CardContent className="p-4">
-              <h2 className="text-lg font-semibold mb-2 text-foreground">{event.mediaName}</h2>
+             <CardHeader>
+                <CardTitle className="text-lg">
+                    {getReportTitle()}
+                </CardTitle>
+             </CardHeader>
+            <CardContent className="p-4 pt-0"> {/* Adjusted padding */}
+              <h2 className="text-md font-semibold mb-2 text-foreground">{event.mediaName}</h2>
               <p className="text-xs text-muted-foreground mb-3">
                 Capturado em: {new Date(event.timestamp).toLocaleString('pt-BR')}
               </p>
@@ -113,11 +137,11 @@ export default function AnalysisDetailsPage() {
                   width={400}
                   height={300}
                   className="rounded-md object-cover w-full aspect-video border border-border"
-                  data-ai-hint="night sky object"
+                  data-ai-hint={event.analysisType === AnalysisType.TRAIL ? "object motion trail" : "night sky object"}
                 />
               )}
               {!event.thumbnailUrl && (
-                 <div className="w-full aspect-video bg-muted rounded-md flex items-center justify-center border border-border" data-ai-hint="night sky object">
+                 <div className="w-full aspect-video bg-muted rounded-md flex items-center justify-center border border-border" data-ai-hint="generic placeholder">
                    <AlertTriangle className="w-12 h-12 text-muted-foreground" />
                  </div>
               )}
@@ -125,7 +149,19 @@ export default function AnalysisDetailsPage() {
           </Card>
         </div>
         <div className="md:col-span-2">
-          <AnalysisReport analysis={event.analysis} mediaName={event.mediaName} timestamp={event.timestamp} />
+          {event.analysisType === AnalysisType.UAP && (
+            <AnalysisReport 
+              analysis={event.analysis as AnalyzeUapMediaOutput} 
+              mediaName={event.mediaName} 
+              timestamp={event.timestamp} 
+            />
+          )}
+          {event.analysisType === AnalysisType.TRAIL && (
+            <TrailAnalysisReport 
+              result={event.analysis as AnalyzeObjectTrailOutput} 
+              videoName={event.mediaName} 
+            />
+          )}
         </div>
       </div>
     </div>

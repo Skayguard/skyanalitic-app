@@ -6,14 +6,88 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertTriangle, CheckCircle2, ListChecks, Trash2, Eye } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ListChecks, Trash2, Eye, GitCommitHorizontal, Search } from 'lucide-react';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { AnalysisType, type AnalyzedEvent } from '@/lib/types';
+import type { AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
+import type { AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
 
 export function CapturedEventsList() {
   const { analyzedEvents, isLoading, clearAllEvents } = useAnalyzedEvents();
+
+  const renderEventItem = (event: AnalyzedEvent) => {
+    let title = event.mediaName;
+    let description = '';
+    let IconComponent = Search; // Default for UAP
+    let probabilityText = '';
+    let probabilityHigh = false;
+
+    if (event.analysisType === AnalysisType.UAP) {
+      const uapAnalysis = event.analysis as AnalyzeUapMediaOutput;
+      description = uapAnalysis.summary.substring(0, 70) + (uapAnalysis.summary.length > 70 ? '...' : '');
+      const prob = uapAnalysis.probabilityOfGenuineUapEvent * 100;
+      probabilityText = `Prob. UAP: ${prob.toFixed(0)}%`;
+      probabilityHigh = prob > 50;
+    } else if (event.analysisType === AnalysisType.TRAIL) {
+      const trailAnalysis = event.analysis as AnalyzeObjectTrailOutput;
+      title = `Rastro: ${event.mediaName}`;
+      description = trailAnalysis.trailDescription.substring(0, 70) + (trailAnalysis.trailDescription.length > 70 ? '...' : '');
+      IconComponent = GitCommitHorizontal;
+      if (trailAnalysis.trailImageUri) {
+        probabilityText = 'Imagem de rastro gerada';
+      } else {
+        probabilityText = 'Rastro descrito';
+        probabilityHigh = true; // To use alert icon if no image
+      }
+    }
+
+    return (
+      <li key={event.id}>
+        <Link href={`/analysis/${encodeURIComponent(event.id)}`} legacyBehavior passHref>
+          <a className="block p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background">
+            <div className="flex items-center space-x-2">
+              <Image
+                src={event.thumbnailUrl || `https://placehold.co/48x48.png?text=SkyA`}
+                alt={`Miniatura para ${event.mediaName}`}
+                width={48}
+                height={48}
+                className="rounded-md object-cover aspect-square border border-border flex-shrink-0"
+                data-ai-hint={event.analysisType === AnalysisType.TRAIL ? "motion trail" : "night sky"}
+              />
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <h3 className="text-xs sm:text-sm font-semibold truncate text-foreground flex items-center">
+                  <IconComponent className="h-4 w-4 mr-1.5 text-primary flex-shrink-0" />
+                  {title}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate">
+                  {new Date(event.timestamp).toLocaleDateString('pt-BR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{description}</p>
+                {probabilityText && (
+                  <p className={cn(
+                      "text-xs font-medium mt-0.5 truncate",
+                      probabilityHigh ? 'text-destructive' : 'text-green-400'
+                    )}
+                  >
+                    {probabilityText}
+                    {probabilityHigh ?
+                      <AlertTriangle className="inline ml-1 h-3 w-3" /> :
+                      <CheckCircle2 className="inline ml-1 h-3 w-3" />
+                    }
+                  </p>
+                )}
+              </div>
+              <Eye className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-1" />
+            </div>
+          </a>
+        </Link>
+      </li>
+    );
+  };
+
 
   if (isLoading) {
     return (
@@ -34,7 +108,6 @@ export function CapturedEventsList() {
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
                 </div>
-                {/* <Skeleton className="h-8 w-16 rounded-md" /> Removed as part of making the whole item clickable */}
               </div>
             ))}
           </div>
@@ -70,43 +143,8 @@ export function CapturedEventsList() {
           </div>
         ) : (
           <ScrollArea className="h-[600px]">
-            <ul className="space-y-2 pr-1"> {/* Reduced space-y slightly and added small pr for scrollbar */}
-              {analyzedEvents.map((event) => (
-                <li key={event.id}>
-                  <Link href={`/analysis/${encodeURIComponent(event.id)}`} legacyBehavior passHref>
-                    <a className="block p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background">
-                      <div className="flex items-center space-x-2">
-                        <Image
-                          src={event.thumbnailUrl || `https://placehold.co/48x48.png?text=UAP`}
-                          alt={`Miniatura para ${event.mediaName}`}
-                          width={48} // Reduced size
-                          height={48} // Reduced size
-                          className="rounded-md object-cover aspect-square border border-border flex-shrink-0"
-                          data-ai-hint="night sky"
-                        />
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <h3 className="text-xs sm:text-sm font-semibold truncate text-foreground">{event.mediaName}</h3>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {new Date(event.timestamp).toLocaleDateString('pt-BR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                          <p className={cn(
-                              "text-xs font-medium mt-0.5 truncate",
-                              event.analysis.probabilityOfGenuineUapEvent > 0.5 ? 'text-destructive' : 'text-green-400'
-                            )}
-                          >
-                            Prob: {(event.analysis.probabilityOfGenuineUapEvent * 100).toFixed(0)}%
-                            {event.analysis.probabilityOfGenuineUapEvent > 0.5 ?
-                              <AlertTriangle className="inline ml-1 h-3 w-3" /> :
-                              <CheckCircle2 className="inline ml-1 h-3 w-3" />
-                            }
-                          </p>
-                        </div>
-                        <Eye className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-1" />
-                      </div>
-                    </a>
-                  </Link>
-                </li>
-              ))}
+            <ul className="space-y-2 pr-1">
+              {analyzedEvents.map(renderEventItem)}
             </ul>
           </ScrollArea>
         )}

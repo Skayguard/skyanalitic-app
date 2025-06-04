@@ -4,7 +4,8 @@
 import React from 'react';
 import type { AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ImageIcon, FileText, AlertTriangle, Sparkles, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ImageIcon, FileText, AlertTriangle, Sparkles, CheckCircle, Download } from 'lucide-react';
 import Image from 'next/image';
 
 interface TrailAnalysisReportProps {
@@ -13,6 +14,19 @@ interface TrailAnalysisReportProps {
 }
 
 export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportProps) {
+
+  const handleDownloadImage = () => {
+    if (result.trailImageUri) {
+      const link = document.createElement('a');
+      link.href = result.trailImageUri;
+      const fileName = videoName.substring(0, videoName.lastIndexOf('.')) || videoName;
+      link.download = `${fileName}_rastro_analise.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <Card className="shadow-lg border border-border bg-card mt-6">
       <CardHeader>
@@ -46,10 +60,18 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-            <ImageIcon className="h-5 w-5 text-primary" />
-            Imagem do Rastro Gerada pela IA
-          </h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-primary" />
+              Imagem do Rastro Gerada pela IA
+            </h3>
+            {result.trailImageUri && (
+              <Button onClick={handleDownloadImage} variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Baixar Imagem
+              </Button>
+            )}
+          </div>
           {result.trailImageUri ? (
             <>
               <Image
@@ -78,6 +100,12 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
             <div className="p-3 bg-green-500/10 border border-green-500/30 text-green-300 rounded-md flex items-center gap-2 text-sm">
                 <CheckCircle className="h-5 w-5 flex-shrink-0" />
                 <p>Análise de rastro e geração de imagem concluídas com sucesso.</p>
+            </div>
+        )}
+         {!result.errorMessage && !result.trailImageUri && result.trailDescription && (
+             <div className="p-3 bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded-md flex items-center gap-2 text-sm">
+                <CheckCircle className="h-5 w-5 flex-shrink-0" />
+                <p>Análise de rastro textual concluída. A imagem do rastro não pôde ser gerada.</p>
             </div>
         )}
 

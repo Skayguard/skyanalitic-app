@@ -1,20 +1,27 @@
 
 import type { AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
+import type { AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
+
+export enum AnalysisType {
+  UAP = 'uap',
+  TRAIL = 'trail',
+}
 
 export interface AnalyzedEvent {
-  id: string; // Client-generated unique ID, also used for URL routing
-  firestoreDocId?: string; // Firestore document ID, populated after saving
-  userId?: string; // UID of the Firebase authenticated user, added before saving to Firestore
-  timestamp: string; // ISO string for client-side use, converted to Firestore Timestamp for storage
-  thumbnailUrl?: string; // data URI or placeholder URL
+  id: string; 
+  firestoreDocId?: string; 
+  userId?: string; 
+  timestamp: string; 
+  thumbnailUrl?: string; 
   mediaName: string;
-  analysis: AnalyzeUapMediaOutput;
+  analysisType: AnalysisType;
+  analysis: AnalyzeUapMediaOutput | AnalyzeObjectTrailOutput; // Union type for different analysis results
 }
 
 export interface AppSettings {
-  motionSensitivity: number; // 0-100
-  minBrightness: number; // 0-100
-  minObjectSize: number; // pixels or percentage
+  motionSensitivity: number; 
+  minBrightness: number; 
+  minObjectSize: number; 
 }
 
 export const defaultSettings: AppSettings = {
@@ -22,3 +29,4 @@ export const defaultSettings: AppSettings = {
   minBrightness: 30,
   minObjectSize: 10,
 };
+

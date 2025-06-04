@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UploadCloud, Loader2, AlertTriangle, Film, Image as ImageIcon, GitCommitHorizontal } from 'lucide-react';
+import { UploadCloud, Loader2, AlertTriangle, Film, GitCommitHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeObjectTrail, AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
 import { TrailAnalysisReport } from './TrailAnalysisReport';
+import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
+import { AnalysisType } from '@/lib/types';
 
 export function TrailAnalysisForm() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -19,6 +21,7 @@ export function TrailAnalysisForm() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
+  const { addAnalyzedEvent } = useAnalyzedEvents();
 
   const resetFormState = () => {
     setVideoFile(null);
@@ -35,7 +38,7 @@ export function TrailAnalysisForm() {
     const selectedFile = event.target.files?.[0];
 
     if (selectedFile) {
-      if (selectedFile.size > 50 * 1024 * 1024) { // Increased limit for videos, e.g. 50MB
+      if (selectedFile.size > 50 * 1024 * 1024) { 
         toast({ title: "Arquivo de vídeo muito grande", description: "Por favor, selecione um vídeo menor que 50MB.", variant: "destructive" });
         return;
       }
@@ -66,21 +69,38 @@ export function TrailAnalysisForm() {
     setError(null);
 
     try {
-      // videoPreviewUrl is the Data URI of the selected video file
       const result = await analyzeObjectTrail({ videoDataUri: videoPreviewUrl });
       setAnalysisResult(result);
       
-      if (result.errorMessage) {
+      const newEventId = new Date().toISOString() + Math.random().toString(36).substring(2, 9);
+      await addAnalyzedEvent({
+        id: newEventId,
+        timestamp: new Date().toISOString(),
+        thumbnailUrl: result.trailImageUri || `https://placehold.co/300x200.png?text=Rastro`,
+        mediaName: videoFile.name,
+        analysisType: AnalysisType.TRAIL,
+        analysis: result,
+      });
+      
+      if (result.errorMessage && !result.trailImageUri) { // Show error toast only if it's a significant error and no image
          toast({
-            title: "Aviso da Análise",
+            title: "Aviso da Análise de Rastro",
             description: result.errorMessage,
+            variant: "default", // Use default for warnings that might still produce some output
+            duration: 7000,
+          });
+      } else if (result.errorMessage && result.trailImageUri) { // Info toast if image generated despite other minor issues
+         toast({
+            title: "Análise de Rastro Concluída com Observações",
+            description: result.errorMessage, // Show the message
             variant: "default",
             duration: 7000,
           });
-      } else {
+      }
+      else {
         toast({
             title: "Análise de Rastro Concluída",
-            description: "O relatório da análise de rastro está pronto.",
+            description: "O relatório da análise de rastro está pronto e salvo.",
           });
       }
 
@@ -107,7 +127,7 @@ export function TrailAnalysisForm() {
         </CardTitle>
         <CardDescription>
           Envie um arquivo de vídeo (máx. 50MB). A IA analisará o movimento e tentará gerar uma imagem do rastro do objeto.
-          Este processo pode levar algum tempo dependendo do tamanho e duração do vídeo.
+          Este processo pode levar algum tempo. Os resultados serão salvos no seu painel.
         </CardDescription>
       </CardHeader>
       <CardContent>
