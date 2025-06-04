@@ -6,3 +6,4 @@ To get started, take a look at src/app/page.tsx.
 # skyanalitic-app
 # skyanalitic-app
 # skyanalitic-app
+# skyanalitic-app
