@@ -34,6 +34,10 @@ export function FileUploadForm() {
     setIsExtractingFrame(false);
     if (videoRef.current) {
       videoRef.current.src = ''; // Clear previous video source
+      if (videoRef.current.srcObject) { // Also clear srcObject if it was set
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
     }
   };
 
@@ -43,7 +47,7 @@ export function FileUploadForm() {
       const canvasElement = canvasRef.current;
 
       if (!videoElement || !canvasElement) {
-        reject(new Error("Elementos de vídeo/canvas não encontrados."));
+        reject(new Error("Elementos de vídeo/canvas não encontrados para extração."));
         return;
       }
 
@@ -56,22 +60,21 @@ export function FileUploadForm() {
           return;
         }
       };
-      reader.onerror = () => reject(new Error("Falha ao ler o arquivo de vídeo."));
+      reader.onerror = (err) => {
+        console.error("FileReader error:", err);
+        reject(new Error("Falha ao ler o arquivo de vídeo localmente."));
+      }
       reader.readAsDataURL(videoFile);
       
       videoElement.onloadeddata = () => {
         const duration = videoElement.duration;
         let effectiveTimeInSeconds = timeInSeconds;
 
-        // Ensure video is seekable and try to get a frame
-        // If duration is invalid or very short, try to get a frame near the beginning.
         if (!isFinite(duration) || duration <= 0) {
-          effectiveTimeInSeconds = 0.1; // Try for a very early frame
+          effectiveTimeInSeconds = 0.1; 
         } else if (timeInSeconds >= duration) {
-          // If requested time is beyond or at video end, try midpoint or very early if too short
           effectiveTimeInSeconds = Math.max(0.1, duration / 2); 
         } else {
-          // Ensure we don't seek to 0 if 0 was passed, as 0.1 is safer for 'seeked' event
           effectiveTimeInSeconds = Math.max(0.1, timeInSeconds); 
         }
         
@@ -84,32 +87,34 @@ export function FileUploadForm() {
           canvasElement.width = videoElement.videoWidth;
           canvasElement.height = videoElement.videoHeight;
           context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-          const frameDataUri = canvasElement.toDataURL('image/png'); // Extract as PNG
+          const frameDataUri = canvasElement.toDataURL('image/png'); 
           resolve(frameDataUri);
         } else {
-          reject(new Error("Não foi possível obter contexto do canvas."));
+          reject(new Error("Não foi possível obter contexto do canvas para extrair o quadro."));
         }
         // Clean up video src
-        if (videoElement.src.startsWith('blob:')) {
-            URL.revokeObjectURL(videoElement.src);
-        } else if (videoElement.src.startsWith('data:')) {
-            videoElement.src = ''; // Clear data URL
-        }
+        URL.revokeObjectURL(videoElement.src); // Revoke object URL created by FileReader
+        videoElement.src = '';
       };
       
       videoElement.onerror = (e) => {
-        console.error("Video error:", videoElement.error, e);
-        let errorMsg = "Não foi possível carregar ou processar o vídeo.";
+        console.error("Video element error:", videoElement.error, e);
+        let errorMsg = "Não foi possível carregar ou processar o vídeo para extração de quadro.";
         if (videoElement.error) {
             switch(videoElement.error.code) {
-                case MediaError.MEDIA_ERR_ABORTED: errorMsg = "Download do vídeo abortado."; break;
-                case MediaError.MEDIA_ERR_NETWORK: errorMsg = "Erro de rede durante o download do vídeo."; break;
-                case MediaError.MEDIA_ERR_DECODE: errorMsg = "Erro ao decodificar o vídeo. Formato pode não ser suportado ou arquivo corrompido."; break;
-                case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: errorMsg = "Formato de vídeo não suportado."; break;
-                default: errorMsg = `Erro desconhecido ao carregar o vídeo (código: ${videoElement.error.code}).`;
+                case MediaError.MEDIA_ERR_ABORTED: errorMsg = "Download do vídeo (para extração) abortado."; break;
+                case MediaError.MEDIA_ERR_NETWORK: errorMsg = "Erro de rede durante o carregamento do vídeo (para extração)."; break;
+                case MediaError.MEDIA_ERR_DECODE: errorMsg = `Erro ao decodificar o vídeo (para extração). O formato ou codec "${videoFile.type}" pode não ser suportado pelo navegador ou o arquivo está corrompido.`; break;
+                case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: errorMsg = `Formato de vídeo ("${videoFile.type}") não suportado pelo navegador para extração de quadro.`; break;
+                default: errorMsg = `Erro desconhecido ao carregar o vídeo para extração (código: ${videoElement.error.code}).`;
+            }
+            if (videoElement.error.message) {
+                 errorMsg += ` Detalhe: ${videoElement.error.message}`;
             }
         }
         reject(new Error(errorMsg));
+        URL.revokeObjectURL(videoElement.src); // Clean up on error too
+        videoElement.src = '';
       };
     });
   };
@@ -128,29 +133,41 @@ export function FileUploadForm() {
 
       if (selectedFile.type.startsWith('video/')) {
         setIsExtractingFrame(true);
-        setError(null);
+        setError(null); // Clear previous errors
         try {
           toast({ title: "Processando Vídeo", description: "Extraindo um quadro para pré-visualização e análise..." });
-          const frame = await extractFrameFromVideo(selectedFile, 1); // Extract frame at 1 second
-          setPreviewUrl(frame); // This will be the PNG data URI of the frame
+          const frame = await extractFrameFromVideo(selectedFile, 1); 
+          setPreviewUrl(frame); 
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido ao extrair o quadro.";
           console.error("Erro ao extrair quadro:", err);
-          setError(errorMessage);
-          toast({ title: "Falha na Extração do Quadro", description: errorMessage, variant: "destructive" });
+          setError(errorMessage); // Set the error state here
+          toast({ title: "Falha na Extração do Quadro", description: errorMessage, variant: "destructive", duration: 7000 });
           setFile(null); // Clear invalid file
+          setPreviewUrl(null); // Ensure preview is also cleared
         } finally {
           setIsExtractingFrame(false);
         }
       } else if (selectedFile.type.startsWith('image/')) {
+        setError(null); // Clear previous errors
         const reader = new FileReader();
         reader.onloadend = () => {
           setPreviewUrl(reader.result as string);
         };
+        reader.onerror = () => {
+            const imageError = "Falha ao ler o arquivo de imagem.";
+            setError(imageError);
+            toast({ title: "Erro na Imagem", description: imageError, variant: "destructive" });
+            setFile(null);
+            setPreviewUrl(null);
+        }
         reader.readAsDataURL(selectedFile);
       } else {
-        toast({ title: "Tipo de arquivo não suportado", description: "Por favor, selecione um arquivo de imagem ou vídeo.", variant: "destructive" });
+        const typeError = "Tipo de arquivo não suportado. Por favor, selecione um arquivo de imagem ou vídeo.";
+        setError(typeError);
+        toast({ title: "Tipo de Arquivo Inválido", description: typeError, variant: "destructive" });
         setFile(null);
+        setPreviewUrl(null);
       }
     }
   };
@@ -165,17 +182,21 @@ export function FileUploadForm() {
       toast({ title: "Aguarde", description: "Extração de quadro do vídeo em progresso.", variant: "default" });
       return;
     }
-    if (!previewUrl) { // previewUrl now holds the data URI for both images and extracted video frames
-        toast({ title: "Mídia não preparada", description: "A pré-visualização da mídia não está pronta para análise.", variant: "destructive" });
+    // If there's an error state from file handling/preview generation, prevent submission
+    if (error) {
+        toast({ title: "Não é possível analisar", description: `Corrija o erro anterior antes de prosseguir: ${error}`, variant: "destructive", duration: 7000});
+        return;
+    }
+    if (!previewUrl) { 
+        toast({ title: "Mídia não preparada", description: "A pré-visualização da mídia não está pronta para análise. Verifique se houve erros ou tente selecionar o arquivo novamente.", variant: "destructive" });
         return;
     }
 
     setIsAnalyzing(true);
     setAnalysisResult(null);
-    setError(null);
+    // setError(null); // Don't clear error here, it might be relevant if submission fails for other reasons
 
     try {
-      // previewUrl is now always the data URI to be analyzed (original image or extracted video frame PNG)
       const result = await analyzeUapMedia({ mediaDataUri: previewUrl });
       setAnalysisResult(result);
       const newEventId = new Date().toISOString() + Math.random().toString(36).substring(2, 9);
@@ -183,9 +204,9 @@ export function FileUploadForm() {
       await addAnalyzedEvent({
         id: newEventId,
         timestamp: new Date().toISOString(),
-        thumbnailUrl: previewUrl, // Use the (potentially extracted) previewUrl as thumbnail
+        thumbnailUrl: previewUrl, 
         mediaName: file.name,
-        analysisType: AnalysisType.UAP, // Explicitly set type for this form
+        analysisType: AnalysisType.UAP,
         analysis: result,
       });
       toast({
@@ -195,7 +216,7 @@ export function FileUploadForm() {
     } catch (err) {
       console.error("Falha na análise IA:", err);
       const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise IA.";
-      setError(errorMessage);
+      setError(errorMessage); // Set error state for AI analysis failure
       toast({
         title: "Falha na Análise",
         description: errorMessage,
@@ -218,7 +239,6 @@ export function FileUploadForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Hidden elements for video/canvas processing */}
         <video ref={videoRef} style={{ display: 'none' }} crossOrigin="anonymous" muted playsInline preload="metadata" />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
@@ -230,13 +250,13 @@ export function FileUploadForm() {
             <Input
               id="file-upload"
               type="file"
-              accept="image/*,video/*"
+              accept="image/*,video/mp4,video/quicktime,video/webm" // More specific common video types
               onChange={handleFileChange}
               className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               aria-describedby="file-upload-help"
               disabled={isExtractingFrame || isAnalyzing}
             />
-            <p id="file-upload-help" className="mt-1 text-xs text-muted-foreground">Formatos suportados: JPG, PNG, MP4, MOV, etc. Máx 20MB.</p>
+            <p id="file-upload-help" className="mt-1 text-xs text-muted-foreground">Formatos de vídeo comuns: MP4, MOV, WebM. Imagens: JPG, PNG. Máx 20MB.</p>
           </div>
 
           {file && (
@@ -263,16 +283,24 @@ export function FileUploadForm() {
                     <p>Pronto para extrair quadro do vídeo.</p>
                  </div> 
               )}
-               {!isExtractingFrame && !previewUrl && file.type.startsWith('image/') && (
+               {!isExtractingFrame && !previewUrl && file.type.startsWith('image/') && !error &&(
                  <div className="flex flex-col items-center text-muted-foreground">
                     <ImageIcon className="h-10 w-10 mb-2" />
                     <p>Processando imagem...</p> 
                  </div>
               )}
+               {/* Display error specific to preview generation if it occurred */}
+              {!isExtractingFrame && error && !analysisResult && (
+                 <div className="flex flex-col items-center text-destructive p-2 text-center">
+                    <AlertTriangle className="h-10 w-10 mb-2" />
+                    <p className="text-sm font-semibold">Falha na Pré-visualização</p>
+                    <p className="text-xs">{error}</p>
+                 </div>
+              )}
             </div>
           )}
 
-          <Button type="submit" disabled={!file || !previewUrl || isAnalyzing || isExtractingFrame} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button type="submit" disabled={!file || isAnalyzing || isExtractingFrame || !!error && !previewUrl /* Disable if error and no preview */} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
             {isAnalyzing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : isExtractingFrame ? (
@@ -284,7 +312,8 @@ export function FileUploadForm() {
           </Button>
         </form>
 
-        {error && !isAnalyzing && ( // Show general error only if not in analysis, to avoid duplicate messages
+        {/* Show general error from AI analysis, or if file processing failed and it's not shown in preview area */}
+        {error && !isAnalyzing && (analysisResult || !previewUrl) && ( 
           <div className="mt-6 p-4 bg-destructive/10 border border-destructive text-destructive rounded-md flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
             <div>
@@ -294,7 +323,7 @@ export function FileUploadForm() {
           </div>
         )}
 
-        {analysisResult && !error && (
+        {analysisResult && !error && ( // Only show report if there was no error during AI analysis
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2">
               <FileCheck2 className="h-6 w-6 text-green-400"/>
@@ -307,5 +336,3 @@ export function FileUploadForm() {
     </Card>
   );
 }
-
-    
