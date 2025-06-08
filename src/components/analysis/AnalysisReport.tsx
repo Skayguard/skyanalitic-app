@@ -15,23 +15,47 @@ interface AnalysisReportProps {
 }
 
 export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisReportProps) {
+  console.log('[AnalysisReport] Props recebidas:', { analysis, mediaName, timestamp });
+
+  if (!analysis) {
+    console.error('[AnalysisReport] Prop "analysis" está indefinida ou nula.');
+    return (
+      <Card className="shadow-lg border border-border bg-card">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold text-destructive-foreground flex items-center gap-2">
+            <AlertTriangle className="h-7 w-7 text-destructive" />
+            Erro no Relatório
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-destructive-foreground">Não foi possível carregar os dados da análise.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const probabilityValue = analysis.probabilityOfGenuineUapEvent;
-  const probabilityPercent = 
+  const probabilityPercent =
     probabilityValue !== undefined && probabilityValue !== null
       ? probabilityValue * 100
-      : 0; // Default to 0 if undefined or null
+      : 0;
 
   const isHighProbability = probabilityPercent > 50;
 
-  const DetailItem: React.FC<{ icon: React.ElementType, label: string, value: string | number | React.ReactNode, valueClassName?: string }> = ({ icon: Icon, label, value, valueClassName }) => (
-    <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-      <dt className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-        <Icon className="h-5 w-5 text-primary" />
-        {label}
-      </dt>
-      <dd className={`mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0 ${valueClassName || ''}`}>{value}</dd>
-    </div>
-  );
+  console.log('[AnalysisReport] ProbabilityPercent:', probabilityPercent, 'IsHighProbability:', isHighProbability);
+
+  const DetailItem: React.FC<{ icon: React.ElementType, label: string, value: string | number | React.ReactNode, valueClassName?: string }> = ({ icon: Icon, label, value, valueClassName }) => {
+    // console.log(`[AnalysisReport] DetailItem: ${label}`, value); // Pode ser muito verboso, descomentar se necessário
+    return (
+      <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Icon className="h-5 w-5 text-primary" />
+          {label}
+        </dt>
+        <dd className={`mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0 ${valueClassName || ''}`}>{value}</dd>
+      </div>
+    );
+  };
 
   return (
     <Card className="shadow-lg border border-border bg-card">
@@ -42,7 +66,12 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
         </CardTitle>
         <CardDescription>
           Resultados detalhados para: <span className="font-medium text-accent">{mediaName}</span>
-          {timestamp && ` (Analisado em: ${new Date(timestamp).toLocaleString('pt-BR')})`}
+          {timestamp && typeof timestamp === 'string' && (
+            ` (Analisado em: ${new Date(timestamp).toLocaleString('pt-BR')})`
+          )}
+          {!timestamp && (
+            ` (Timestamp da análise indisponível)`
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -55,8 +84,8 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
                 <span className={`font-bold text-lg ${isHighProbability ? 'text-destructive' : 'text-green-400'}`}>
                   {probabilityPercent.toFixed(1)}%
                 </span>
-                {isHighProbability ? 
-                  <AlertTriangle className="h-5 w-5 text-destructive" /> : 
+                {isHighProbability ?
+                  <AlertTriangle className="h-5 w-5 text-destructive" /> :
                   <CheckCircle2 className="h-5 w-5 text-green-400" />
                 }
               </div>
@@ -72,12 +101,12 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
             value={<p className="leading-relaxed">{analysis.summary || "Não disponível"}</p>}
           />
           <DetailItem
-            icon={BrainCircuit} 
+            icon={BrainCircuit}
             label="Grau de Anomalia"
             value={analysis.anomalyGrade ? <Badge variant={isHighProbability ? "destructive" : "secondary"} className="text-sm">{analysis.anomalyGrade}</Badge> : "Não disponível"}
           />
           <DetailItem
-            icon={FileText} 
+            icon={FileText}
             label="Detalhes Técnicos"
             value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.technicalDetails || "Não disponível"}</p>}
           />
