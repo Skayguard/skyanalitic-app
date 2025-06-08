@@ -45,11 +45,12 @@ const analyzeObjectTrailFlow = ai.defineFlow(
         name: 'generateTrailDescriptionPrompt',
         input: { schema: AnalyzeObjectTrailInputSchema },
         output: { schema: z.object({ description: z.string() }) },
-        prompt: `Analyze the following video: {{media url=videoDataUri}}.
-        Identify the primary moving object. Describe its trail or path of motion in detail.
-        Include information about its apparent trajectory, any changes in direction or speed,
-        and its visual characteristics as it moves. If there are multiple objects, focus on the most prominent or anomalous one.
-        If no clear moving object or trail can be identified, state that.`,
+        prompt: `Analise o seguinte vídeo: {{media url=videoDataUri}}.
+        Responda em português do Brasil.
+        Identifique o objeto em movimento principal. Descreva seu rastro ou caminho de movimento em detalhes.
+        Inclua informações sobre sua trajetória aparente, quaisquer mudanças de direção ou velocidade,
+        e suas características visuais enquanto se move. Se houver múltiplos objetos, foque no mais proeminente ou anômalo.
+        Se nenhum objeto em movimento claro ou rastro puder ser identificado, afirme isso.`,
          // Using the default model specified in ai configuration (gemini-2.0-flash)
       });
 
@@ -57,21 +58,19 @@ const analyzeObjectTrailFlow = ai.defineFlow(
       const trailDescription = descriptionOutput?.description || "Não foi possível gerar uma descrição do rastro a partir do vídeo.";
 
       // Then, attempt to generate an image of the trail using Gemini 2.0 Flash with image generation capabilities.
-      // This is experimental and might not always produce the desired result.
       let trailImageUri: string | undefined = undefined;
       let imageGenErrorMessage: string | undefined = undefined;
       
       try {
         const imageGenResponse = await ai.generate({
-            model: 'googleai/gemini-2.0-flash-exp', // Explicitly use the image-capable experimental model
-            prompt: `Based on the analysis of this video: {{media url=videoDataUri}}, and focusing on the primary moving object's trail that was described as: "${trailDescription}".
-            Generate a single image that visually represents this object's trail. The image should depict the object at several points along its trajectory, superimposed onto a background that reflects the general scenery of the video.
-            This should create a "motion trail" or "long exposure" effect for the object.
-            If the video is too complex, or the object is not clear, or you cannot reasonably create such a trail image, output a simple placeholder or indicate failure in the text part of your response.`,
+            model: 'googleai/gemini-2.0-flash-exp',
+            prompt: `Baseado na análise deste vídeo: {{media url=videoDataUri}}, e focando no rastro do objeto em movimento principal que foi descrito como: "${trailDescription}".
+            Gere uma única imagem que represente visualmente o rastro deste objeto. A imagem deve retratar o objeto em vários pontos ao longo de sua trajetória, sobreposto a um fundo que reflita o cenário geral do vídeo.
+            Isso deve criar um efeito de "rastro de movimento" ou "longa exposição" para o objeto.
+            Se o vídeo for muito complexo, ou o objeto não estiver claro, ou você não puder razoavelmente criar tal imagem de rastro, produza um placeholder simples ou indique falha na parte textual da sua resposta.
+            Qualquer texto na sua resposta deve ser em português do Brasil.`,
             config: {
-              responseModalities: ['TEXT', 'IMAGE'], // Request both text (for potential error/fallback) and image
-              // Add safety settings if needed, e.g. to be less restrictive if it helps generation
-              // safetySettings: [{ category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }] 
+              responseModalities: ['TEXT', 'IMAGE'], 
             },
         });
         

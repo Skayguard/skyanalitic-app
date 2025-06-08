@@ -1,3 +1,4 @@
+
 // Summarize the technical details, anomaly grade, database comparisons and probability of a UAP event.
 
 'use server';
@@ -43,15 +44,16 @@ const summarizeReportDetailsPrompt = ai.definePrompt({
   name: 'summarizeReportDetailsPrompt',
   input: {schema: SummarizeReportDetailsInputSchema},
   output: {schema: SummarizeReportDetailsOutputSchema},
-  prompt: `You are an expert in summarizing technical reports related to Unidentified Aerial Phenomena (UAP).
-  Given the technical details, anomaly grade, database comparisons, and the probability of a UAP event, create a concise summary.
+  prompt: `Você é um especialista em resumir relatórios técnicos relacionados a Fenômenos Aéreos Não Identificados (UAP).
+Responda em português do Brasil.
+Dados os detalhes técnicos, grau de anomalia, comparações com bancos de dados e a probabilidade de um evento UAP, crie um resumo conciso.
 
-  Technical Details: {{{technicalDetails}}}
-  Anomaly Grade: {{{anomalyGrade}}}
-  Database Comparisons: {{{databaseComparisons}}}
-  Probability of UAP Event: {{{probabilityOfUAP}}}
+Detalhes Técnicos: {{{technicalDetails}}}
+Grau de Anomalia: {{{anomalyGrade}}}
+Comparações com Banco de Dados: {{{databaseComparisons}}}
+Probabilidade de Evento UAP: {{{probabilityOfUAP}}}
 
-  Summary:`,
+Resumo:`,
 });
 
 const summarizeReportDetailsFlow = ai.defineFlow(

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -40,9 +41,11 @@ const analyzeUapMediaPrompt = ai.definePrompt({
   name: 'analyzeUapMediaPrompt',
   input: {schema: AnalyzeUapMediaInputSchema},
   output: {schema: AnalyzeUapMediaOutputSchema},
-  prompt: `You are an expert in analyzing potential UAP (Unidentified Aerial Phenomena) media. You will analyze the provided media and generate a report summarizing technical details, anomaly grade, database comparisons, and the probability of a genuine UAP event. Use your knowledge of physics, image analysis, and existing UAP databases to make your determination. Include a summary of your findings.
+  prompt: `Você é um especialista em analisar mídias de potenciais UAP (Fenômenos Aéreos Não Identificados).
+Responda em português do Brasil.
+Você analisará a mídia fornecida e gerará um relatório resumindo detalhes técnicos, grau de anomalia, comparações com bancos de dados e a probabilidade de um evento UAP genuíno. Use seu conhecimento de física, análise de imagem e bancos de dados UAP existentes para fazer sua determinação. Inclua um resumo de suas descobertas.
 
-Analyze the following media:
+Analise a seguinte mídia:
 
 {{media url=mediaDataUri}}`,
 });
