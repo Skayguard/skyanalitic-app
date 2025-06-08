@@ -22,12 +22,13 @@ export interface AppSettings {
   motionSensitivity: number; 
   minBrightness: number; 
   minObjectSize: number; 
-  enableSimulatedAutoCapture: boolean; // Nova configuração
+  enableAutoMotionDetection: boolean; // Renomeado de enableSimulatedAutoCapture
 }
 
 export const defaultSettings: AppSettings = {
   motionSensitivity: 50,
   minBrightness: 30,
   minObjectSize: 10,
-  enableSimulatedAutoCapture: false, // Valor padrão
+  enableAutoMotionDetection: false, // Valor padrão
 };
+

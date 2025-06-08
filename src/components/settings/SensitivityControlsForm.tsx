@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch'; // Importar Switch
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Save, Settings as SettingsIcon, Loader2, Zap } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -24,11 +24,11 @@ export function SensitivityControlsForm() {
     }
   }, [settings, isLoadingSettings]);
 
-  const handleSliderChange = (field: keyof Omit<AppSettings, 'enableSimulatedAutoCapture'>) => (value: number[]) => {
+  const handleSliderChange = (field: keyof Omit<AppSettings, 'enableAutoMotionDetection'>) => (value: number[]) => {
     setLocalSettings(prev => ({ ...prev, [field]: value[0] }));
   };
 
-  const handleSwitchChange = (field: keyof Pick<AppSettings, 'enableSimulatedAutoCapture'>) => (checked: boolean) => {
+  const handleSwitchChange = (field: keyof Pick<AppSettings, 'enableAutoMotionDetection'>) => (checked: boolean) => {
     setLocalSettings(prev => ({ ...prev, [field]: checked }));
   };
 
@@ -74,24 +74,24 @@ export function SensitivityControlsForm() {
         <form onSubmit={handleSubmit} className="space-y-8">
           <div>
             <div className="flex items-center justify-between space-x-2 mb-2">
-              <Label htmlFor="simulated-auto-capture" className="text-base font-medium flex items-center gap-2">
+              <Label htmlFor="auto-motion-detection" className="text-base font-medium flex items-center gap-2">
                 <Zap className="h-5 w-5 text-primary" />
-                Ativar Captura Automática (Simulada)
+                Ativar Detecção Automática de Movimento
               </Label>
               <Switch
-                id="simulated-auto-capture"
-                checked={localSettings.enableSimulatedAutoCapture}
-                onCheckedChange={handleSwitchChange('enableSimulatedAutoCapture')}
-                aria-label="Ativar Captura Automática Simulada"
+                id="auto-motion-detection"
+                checked={localSettings.enableAutoMotionDetection}
+                onCheckedChange={handleSwitchChange('enableAutoMotionDetection')}
+                aria-label="Ativar Detecção Automática de Movimento"
               />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Quando ativo, um botão para simular detecção aparecerá no feed da câmera. A detecção de movimento real ainda não está implementada.
+              Quando ativo, o sistema tentará detectar movimento no feed da câmera e iniciar capturas automaticamente.
             </p>
           </div>
 
           <div className="border-t border-border pt-6">
-             <p className="text-sm text-muted-foreground mb-4">Os controles abaixo são para uma futura implementação de detecção de movimento real e atualmente não afetam a simulação.</p>
+             <p className="text-sm text-muted-foreground mb-4">Os controles abaixo influenciarão a detecção automática de movimento. Ajuste-os para otimizar os resultados.</p>
             <div>
               <div className="flex justify-between items-center mb-2">
                 <Label htmlFor="motion-sensitivity" className="text-base font-medium">Sensibilidade ao Movimento</Label>
@@ -107,13 +107,13 @@ export function SensitivityControlsForm() {
                 aria-label="Sensibilidade ao Movimento"
                 className="[&>span:first-child>span]:bg-primary"
               />
-              <p className="text-xs text-muted-foreground mt-1">Valores mais altos significam maior sensibilidade ao movimento.</p>
+              <p className="text-xs text-muted-foreground mt-1">Valores mais altos significam maior sensibilidade (detecta movimentos menores).</p>
             </div>
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <Label htmlFor="min-brightness" className="text-base font-medium">Brilho Mínimo para Captura</Label>
+              <Label htmlFor="min-brightness" className="text-base font-medium">Brilho Mínimo para Considerar Pixel</Label>
               <span className="text-sm font-semibold text-accent">{localSettings.minBrightness}%</span>
             </div>
             <Slider
@@ -123,16 +123,16 @@ export function SensitivityControlsForm() {
               step={1}
               value={[localSettings.minBrightness]}
               onValueChange={handleSliderChange('minBrightness')}
-              aria-label="Brilho Mínimo"
+              aria-label="Brilho Mínimo do Pixel"
               className="[&>span:first-child>span]:bg-primary"
             />
-            <p className="text-xs text-muted-foreground mt-1">Objetos mais brilhantes que este limite podem acionar a captura.</p>
+            <p className="text-xs text-muted-foreground mt-1">Pixels mais escuros que este limite serão ignorados na detecção de movimento.</p>
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <Label htmlFor="min-object-size" className="text-base font-medium">Tamanho Mínimo de Objeto Detectado</Label>
-              <span className="text-sm font-semibold text-accent">{localSettings.minObjectSize} (unidades)</span>
+              <Label htmlFor="min-object-size" className="text-base font-medium">"Tamanho" Mínimo do Movimento</Label>
+              <span className="text-sm font-semibold text-accent">{localSettings.minObjectSize} (pontos)</span>
             </div>
             <Slider
               id="min-object-size"
@@ -141,10 +141,10 @@ export function SensitivityControlsForm() {
               step={1}
               value={[localSettings.minObjectSize]}
               onValueChange={handleSliderChange('minObjectSize')}
-              aria-label="Tamanho Mínimo do Objeto"
+              aria-label="Tamanho Mínimo do Movimento"
               className="[&>span:first-child>span]:bg-primary"
             />
-            <p className="text-xs text-muted-foreground mt-1">Define o menor tamanho de um objeto a ser considerado significativo.</p>
+            <p className="text-xs text-muted-foreground mt-1">Um valor abstrato; representa a quantidade de pixels alterados para acionar uma detecção.</p>
           </div>
 
           <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">

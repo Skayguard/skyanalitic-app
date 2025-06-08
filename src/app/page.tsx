@@ -1,20 +1,36 @@
 
-'use client'; // Adicionar 'use client' para usar hooks
+'use client'; 
 
-import React from 'react'; // Importar React
+import React, { useState, useEffect } from 'react';
 import { CameraFeed } from '@/components/dashboard/CameraFeed';
 import { CapturedEventsList } from '@/components/dashboard/CapturedEventsList';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, Wifi, Loader2, Zap } from 'lucide-react'; // Adicionar Loader2 e Zap
-import { useSettings } from '@/contexts/SettingsContext'; // Importar useSettings
+import { Wifi, Loader2, Zap } from 'lucide-react';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function DashboardPage() {
   const { settings, isLoading: isLoadingSettings } = useSettings();
-  const lastCameraCapture = new Date().toLocaleTimeString('pt-BR'); 
+  const [lastManualCaptureTime, setLastManualCaptureTime] = useState<string>('--:--:--');
+  const [monitoringStatus, setMonitoringStatus] = useState<string>('Carregando...');
+  const [motionDetectionStatus, setMotionDetectionStatus] = useState<string>('Carregando...');
 
-  // Atualizar status com base nas configurações
-  const monitoringStatus = isLoadingSettings ? "Carregando..." : (settings.enableSimulatedAutoCapture ? "Ativo (Simulado)" : "Inativo");
-  const simulatedDetectionStatus = isLoadingSettings ? "Carregando..." : (settings.enableSimulatedAutoCapture ? "Habilitado" : "Desabilitado");
+
+  useEffect(() => {
+    // Esta é apenas uma simulação de quando a última captura manual poderia ter ocorrido.
+    // Em um sistema real, isso viria de um estado global ou do evento de captura.
+    // Para agora, vamos apenas definir uma vez.
+    setLastManualCaptureTime(new Date().toLocaleTimeString('pt-BR'));
+  }, []);
+
+  useEffect(() => {
+    if (isLoadingSettings) {
+      setMonitoringStatus("Carregando...");
+      setMotionDetectionStatus("Carregando...");
+    } else {
+      setMonitoringStatus(settings.enableAutoMotionDetection ? "Ativo" : "Inativo");
+      setMotionDetectionStatus(settings.enableAutoMotionDetection ? "Habilitado (Automático)" : "Desabilitado (Manual)");
+    }
+  }, [settings, isLoadingSettings]);
 
   return (
     <div className="container mx-auto py-2">
@@ -44,21 +60,21 @@ export default function DashboardPage() {
                 <>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Monitoramento (Automático):</span>
-                    <span className={`font-semibold ${settings.enableSimulatedAutoCapture ? "text-green-400" : "text-muted-foreground"}`}>
+                    <span className={`font-semibold ${settings.enableAutoMotionDetection ? "text-green-400" : "text-muted-foreground"}`}>
                       {monitoringStatus}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Detecção de Movimento (Simulada):</span>
-                    <span className={`font-semibold ${settings.enableSimulatedAutoCapture ? "text-green-400" : "text-muted-foreground"}`}>
-                      {simulatedDetectionStatus}
+                    <span className="text-sm text-muted-foreground">Detecção de Movimento:</span>
+                    <span className={`font-semibold ${settings.enableAutoMotionDetection ? "text-green-400" : "text-muted-foreground"}`}>
+                      {motionDetectionStatus}
                     </span>
                   </div>
                 </>
               )}
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Última Captura (Manual):</span>
-                <span className="font-semibold text-accent">{lastCameraCapture}</span>
+                <span className="font-semibold text-accent">{lastManualCaptureTime}</span>
               </div>
                <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Serviço de Análise IA:</span>

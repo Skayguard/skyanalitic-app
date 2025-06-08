@@ -4,12 +4,13 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Camera, VideoOff, Zap, Loader2, SwitchCamera, AlertTriangle, Waves } from 'lucide-react'; // Adicionado Waves
+import { Camera, VideoOff, Zap, Loader2, SwitchCamera, AlertTriangle, Waves } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeUapMedia, type AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { AnalysisType } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 export function CameraFeed() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -19,17 +20,22 @@ export function CameraFeed() {
   const [isProcessingCapture, setIsProcessingCapture] = useState(false);
   const { toast } = useToast();
   const { addAnalyzedEvent } = useAnalyzedEvents();
-  const { settings, isLoading: isLoadingSettings } = useSettings(); // Adicionado isLoadingSettings
+  const { settings, isLoading: isLoadingSettings } = useSettings();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const analysisResultForArtifacts = useRef<AnalyzeUapMediaOutput | null>(null);
 
-
   const [currentFacingMode, setCurrentFacingMode] = useState<'environment' | 'user'>('environment');
   const [videoDeviceCount, setVideoDeviceCount] = useState(0);
   const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
 
+  // Motion Detection State
+  const autoDetectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFrameDataRef = useRef<ImageData | null>(null);
+  const [isAutoDetectingActive, setIsAutoDetectingActive] = useState<boolean>(false);
+  const captureCooldownRef = useRef<boolean>(false);
+  const [isCaptureCooldownActive, setIsCaptureCooldownActive] = useState(false); // For UI updates
 
   const triggerDownload = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
@@ -49,18 +55,27 @@ export function CameraFeed() {
       videoRef.current.srcObject = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = null; 
+      mediaRecorderRef.current.onstop = null;
       mediaRecorderRef.current.stop();
     }
     recordedChunksRef.current = [];
     setIsCameraActive(false);
   }, []);
 
-
+  const stopAutoDetectionLogic = useCallback(() => {
+    if (autoDetectionIntervalRef.current) {
+      clearInterval(autoDetectionIntervalRef.current);
+      autoDetectionIntervalRef.current = null;
+    }
+    setIsAutoDetectingActive(false);
+    lastFrameDataRef.current = null;
+  }, []);
+  
   const initializeCamera = useCallback(async () => {
     stopCurrentStreamAndRecorder();
+    stopAutoDetectionLogic(); // Stop detection when re-initializing camera
     setError(null);
-    setIsSwitchingCamera(true); 
+    setIsSwitchingCamera(true);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setError("Acesso à câmera não suportado por este navegador.");
@@ -81,16 +96,14 @@ export function CameraFeed() {
       }
 
       const constraints: MediaStreamConstraints = { video: {} };
-      if (videoDevices.length > 0) { 
+      if (videoDevices.length > 0) {
          (constraints.video as MediaTrackConstraints).facingMode = currentFacingMode;
       }
       
       let stream: MediaStream;
       try {
-        console.log("Tentando obter stream com constraints:", JSON.stringify(constraints));
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (err) {
-        console.warn(`Falha ao obter câmera com facingMode: ${currentFacingMode}. Tentando default sem facingMode. Erro:`, err);
         stream = await navigator.mediaDevices.getUserMedia({ video: true }); 
       }
 
@@ -101,12 +114,7 @@ export function CameraFeed() {
             setError(null); 
         };
         
-        const mimeTypes = [
-          'video/webm; codecs=vp9',
-          'video/webm; codecs=vp8',
-          'video/webm',
-          'video/mp4',
-        ];
+        const mimeTypes = ['video/webm; codecs=vp9', 'video/webm; codecs=vp8', 'video/webm', 'video/mp4'];
         let chosenMimeType: string | undefined;
         for (const mimeType of mimeTypes) {
           if (MediaRecorder.isTypeSupported(mimeType)) {
@@ -117,58 +125,43 @@ export function CameraFeed() {
 
         if (chosenMimeType) {
           mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: chosenMimeType });
-          console.log("MediaRecorder usando:", chosenMimeType);
           mediaRecorderRef.current.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-              recordedChunksRef.current.push(event.data);
-            }
+            if (event.data.size > 0) recordedChunksRef.current.push(event.data);
           };
         } else {
-          console.error("Nenhum formato de gravação de vídeo suportado.");
           toast({ title: "Gravação de Vídeo", description: "Formato de vídeo para gravação não suportado.", variant: "destructive" });
           mediaRecorderRef.current = null;
         }
       }
     } catch (err) {
-      console.error("Erro detalhado ao acessar câmera:", err);
       let errorMessage = "Não foi possível acessar a câmera. Verifique as permissões.";
       if (err instanceof Error) {
-        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-            errorMessage = "Permissão para câmera negada. Por favor, habilite nas configurações do navegador.";
-        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-            errorMessage = `Nenhuma câmera encontrada para o modo '${currentFacingMode}'. Tente alternar.`;
-        } else if (err.name === "NotReadableError" || err.name === "TrackStartError" || err.name === "OverconstrainedError") {
-            errorMessage = "A câmera está em uso ou não suporta as configurações solicitadas (ex: modo específico).";
-             if (err.name === "OverconstrainedError" && (err as any).constraint === "facingMode") {
-                errorMessage = `Modo de câmera '${currentFacingMode}' não disponível ou com erro. Tentando fallback.`;
-             }
-        } else {
-            errorMessage = `Erro ao acessar câmera: ${err.message}`;
-        }
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") errorMessage = "Permissão para câmera negada.";
+        else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") errorMessage = `Nenhuma câmera encontrada para o modo '${currentFacingMode}'.`;
+        else if (err.name === "NotReadableError" || err.name === "TrackStartError" || err.name === "OverconstrainedError") errorMessage = "Câmera em uso ou não suporta configurações.";
+        else errorMessage = `Erro ao acessar câmera: ${err.message}`;
       }
       setError(errorMessage);
       setIsCameraActive(false); 
     } finally {
         setIsSwitchingCamera(false);
     }
-  }, [currentFacingMode, toast, stopCurrentStreamAndRecorder]);
+  }, [currentFacingMode, toast, stopCurrentStreamAndRecorder, stopAutoDetectionLogic]);
 
   useEffect(() => {
     initializeCamera();
     return () => {
       stopCurrentStreamAndRecorder();
+      stopAutoDetectionLogic();
     };
   }, [initializeCamera]); 
 
-
   const handleSwitchCamera = () => {
     if (videoDeviceCount < 2 && !isSwitchingCamera) { 
-      toast({ title: "Troca de Câmera", description: "Nenhuma outra câmera disponível.", variant: "default" });
+      toast({ title: "Troca de Câmera", description: "Nenhuma outra câmera disponível." });
       return;
     }
     if (isSwitchingCamera) return; 
-
-    console.log("Alternando câmera...");
     setCurrentFacingMode(prevMode => prevMode === 'environment' ? 'user' : 'environment');
   };
 
@@ -182,37 +175,18 @@ export function CameraFeed() {
           canvas.height = videoElement.videoHeight;
           context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
           canvas.toBlob((blob) => {
-            if (blob) {
-              triggerDownload(blob, fileName);
-              resolve();
-            } else {
-              reject(new Error("Falha ao criar blob da imagem do canvas."));
-            }
+            if (blob) { triggerDownload(blob, fileName); resolve(); }
+            else { reject(new Error("Falha ao criar blob.")); }
           }, 'image/png');
-        } else {
-          reject(new Error("Falha ao obter contexto 2D do canvas."));
-        }
+        } else { reject(new Error("Falha ao obter contexto.")); }
       };
       videoElement.addEventListener('seeked', onSeeked);
-      
-      if (videoElement.readyState >= 2) { 
-        videoElement.currentTime = time;
-      } else {
-        videoElement.oncanplay = () => { 
-          videoElement.currentTime = time;
-          videoElement.oncanplay = null; 
-        }
-      }
+      if (videoElement.readyState >= 2) videoElement.currentTime = time;
+      else { videoElement.oncanplay = () => { videoElement.currentTime = time; videoElement.oncanplay = null; }}
     });
   };
 
-  const generateAndDownloadArtifacts = async (
-    videoBlob: Blob,
-    analysisData: AnalyzeUapMediaOutput,
-    baseFileName: string,
-    originalCaptureTimestamp: string,
-    eventId: string
-  ) => {
+  const generateAndDownloadArtifacts = async (videoBlob: Blob, analysisData: AnalyzeUapMediaOutput, baseFileName: string, originalCaptureTimestamp: string, eventId: string) => {
     if (!canvasRef.current) {
       toast({ title: "Erro nos Artefatos", description: "Referência do canvas não encontrada.", variant: "destructive" });
       return;
@@ -220,77 +194,38 @@ export function CameraFeed() {
     const canvas = canvasRef.current;
     const tempVideoEl = document.createElement('video');
     tempVideoEl.src = URL.createObjectURL(videoBlob);
-    tempVideoEl.muted = true; 
-    tempVideoEl.preload = 'auto'; 
-
+    tempVideoEl.muted = true; tempVideoEl.preload = 'auto';
     await new Promise<void>((resolve, reject) => {
-      tempVideoEl.onloadedmetadata = () => {
-        tempVideoEl.play().then(() => { 
-          tempVideoEl.pause();
-          resolve();
-        }).catch(reject);
-      };
-      tempVideoEl.onerror = () => reject(new Error("Falha ao carregar metadados do vídeo gravado."));
-      tempVideoEl.load(); 
+      tempVideoEl.onloadedmetadata = () => { tempVideoEl.play().then(() => { tempVideoEl.pause(); resolve(); }).catch(reject); };
+      tempVideoEl.onerror = () => reject(new Error("Falha ao carregar vídeo gravado.")); tempVideoEl.load();
     });
-  
     try {
-      await extractFrameAndDownload(tempVideoEl, 0.1, `${baseFileName}_foto.png`, canvas); 
-      toast({ title: "Foto Extraída", description: "1 foto foi baixada do vídeo.", duration: 3000 });
+      await extractFrameAndDownload(tempVideoEl, 0.1, `${baseFileName}_foto.png`, canvas);
+      toast({ title: "Foto Extraída", description: "1 foto foi baixada.", duration: 3000 });
     } catch (e) {
-      console.error("Erro ao extrair frame:", e);
-      toast({ title: "Erro na Extração de Foto", description: (e as Error).message, variant: "destructive" });
-    } finally {
-      URL.revokeObjectURL(tempVideoEl.src); 
-    }
-  
-    const technicalData = `
-Skyanalytic - Relatório Técnico de Captura
--------------------------------------------------
-ID do Evento: ${eventId}
-Nome da Mídia: ${baseFileName}
-Timestamp da Captura Original: ${new Date(originalCaptureTimestamp).toLocaleString('pt-BR', { timeZone: 'UTC' })} UTC
-Resolução da Captura: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}
-Navegador (User Agent): ${navigator.userAgent}
-Câmera Usada: ${currentFacingMode}
-
-Configurações da Aplicação no Momento da Captura:
-  Captura Automática Simulada: ${settings.enableSimulatedAutoCapture ? 'Ativada' : 'Desativada'}
-  Sensibilidade ao Movimento: ${settings.motionSensitivity}%
-  Brilho Mínimo para Captura: ${settings.minBrightness}%
-  Tamanho Mínimo de Objeto: ${settings.minObjectSize} unidades
-
-Resultado da Análise IA:
--------------------------
-Probabilidade de UAP Genuíno: ${(analysisData.probabilityOfGenuineUapEvent * 100).toFixed(1)}%
-Grau de Anomalia: ${analysisData.anomalyGrade}
-Resumo da Análise: ${analysisData.summary}
-Detalhes Técnicos da Mídia (IA): ${analysisData.technicalDetails}
-Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
-`;
+      toast({ title: "Erro Extração Foto", description: (e as Error).message, variant: "destructive" });
+    } finally { URL.revokeObjectURL(tempVideoEl.src); }
+    const technicalData = `Skyanalytic - Relatório Técnico\nID: ${eventId}\nMídia: ${baseFileName}\nTimestamp: ${new Date(originalCaptureTimestamp).toLocaleString('pt-BR', { timeZone: 'UTC' })} UTC\nResolução: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}\nNavegador: ${navigator.userAgent}\nCâmera: ${currentFacingMode}\n\nConf App:\n  AutoDetecção: ${settings.enableAutoMotionDetection}\n  Sensibilidade: ${settings.motionSensitivity}%\n  Brilho Mín.: ${settings.minBrightness}%\n  Tam. Obj. Mín.: ${settings.minObjectSize}\n\nAnálise IA:\n  Prob UAP: ${(analysisData.probabilityOfGenuineUapEvent * 100).toFixed(1)}%\n  Anomalia: ${analysisData.anomalyGrade}\n  Resumo: ${analysisData.summary}\n  Detalhes IA: ${analysisData.technicalDetails}\n  DB Comp: ${analysisData.databaseComparisons}`;
     const txtBlob = new Blob([technicalData.trim()], { type: 'text/plain' });
-    triggerDownload(txtBlob, `${baseFileName}_dados_tecnicos.txt`);
-    toast({ title: "Dados Técnicos Gerados", description: "Arquivo TXT com detalhes foi baixado.", duration: 3000 });
+    triggerDownload(txtBlob, `${baseFileName}_dados.txt`);
+    toast({ title: "Dados Técnicos Gerados", description: "Arquivo TXT baixado.", duration: 3000 });
   };
 
-
-  const handleCaptureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current || !isCameraActive || !mediaRecorderRef.current) {
-      toast({ title: "Falha na Captura", description: "Câmera não ativa, MediaRecorder não pronto ou canvas não encontrado.", variant: "destructive" });
+  const handleCaptureAndAnalyze = useCallback(async (triggeredBy: 'manual' | 'auto' = 'manual') => {
+    if (!videoRef.current || !canvasRef.current || !isCameraActive || !mediaRecorderRef.current || isProcessingCapture) {
+      if (triggeredBy === 'manual') { // Only toast for manual triggers if prerequisites fail
+        toast({ title: "Falha na Captura", description: "Câmera/MediaRecorder não prontos ou processando.", variant: "destructive" });
+      }
       return;
     }
 
-    setIsProcessingCapture(true); 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    setIsProcessingCapture(true);
+    const video = videoRef.current; const canvas = canvasRef.current;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     const context = canvas.getContext('2d');
-
     if (!context) {
-      toast({ title: "Falha na Captura", description: "Não foi possível obter o contexto do canvas.", variant: "destructive" });
-      setIsProcessingCapture(false);
-      return;
+      toast({ title: "Falha na Captura", description: "Contexto do canvas indisponível.", variant: "destructive" });
+      setIsProcessingCapture(false); return;
     }
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const initialFrameDataUri = canvas.toDataURL('image/jpeg');
@@ -303,74 +238,116 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
     toast({ title: "Gravação Iniciada", description: "Gravando vídeo de 5 segundos...", duration: 3000 });
 
     mediaRecorderRef.current.onstop = async () => {
-      toast({ title: "Gravação Concluída", description: "Processando vídeo gravado...", duration: 2000 });
+      toast({ title: "Gravação Concluída", description: "Processando vídeo...", duration: 2000 });
       const videoBlob = new Blob(recordedChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'video/webm' });
-      
-      if (videoBlob.size > 0) {
-         triggerDownload(videoBlob, `${mediaName}_video_5s.mp4`);
-      } else {
-         toast({ title: "Gravação Falhou", description: "Nenhum dado de vídeo foi gravado.", variant: "destructive"});
-      }
-
+      if (videoBlob.size > 0) triggerDownload(videoBlob, `${mediaName}_video_5s.mp4`);
+      else toast({ title: "Gravação Falhou", description: "Nenhum dado de vídeo gravado.", variant: "destructive"});
       if (analysisResultForArtifacts.current) {
         await generateAndDownloadArtifacts(videoBlob, analysisResultForArtifacts.current, mediaName, captureTimestamp, eventId);
       } else {
-        toast({ title: "Geração de Artefatos", description: "Análise IA não concluída ou falhou, foto e TXT podem não ter todos os dados.", variant: "default" });
+        toast({ title: "Geração de Artefatos", description: "Análise IA incompleta, artefatos podem faltar dados.", variant: "default" });
       }
-      setIsProcessingCapture(false); 
-      analysisResultForArtifacts.current = null; 
+      setIsProcessingCapture(false);
+      analysisResultForArtifacts.current = null;
+      if (settings.enableAutoMotionDetection) { // Set cooldown after auto-capture
+        captureCooldownRef.current = true;
+        setIsCaptureCooldownActive(true);
+        setTimeout(() => { 
+            captureCooldownRef.current = false; 
+            setIsCaptureCooldownActive(false);
+        }, 30000); // 30s cooldown
+      }
     };
 
-
     setTimeout(() => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-        mediaRecorderRef.current.stop(); 
-      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
     }, 5000);
 
-    analysisResultForArtifacts.current = null; // Reset before new analysis
-
+    analysisResultForArtifacts.current = null;
     try {
       const result = await analyzeUapMedia({ mediaDataUri: initialFrameDataUri });
-      analysisResultForArtifacts.current = result; 
-      const newEvent = {
-        id: eventId,
-        timestamp: captureTimestamp,
-        thumbnailUrl: initialFrameDataUri,
-        mediaName: mediaName,
-        analysis: result,
-        analysisType: AnalysisType.UAP,
-      };
-      addAnalyzedEvent(newEvent); 
-      toast({
-        title: "Análise IA Concluída",
-        description: `Probabilidade de UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
-      });
+      analysisResultForArtifacts.current = result;
+      addAnalyzedEvent({ id: eventId, timestamp: captureTimestamp, thumbnailUrl: initialFrameDataUri, mediaName: mediaName, analysis: result, analysisType: AnalysisType.UAP });
+      toast({ title: "Análise IA Concluída", description: `Probabilidade UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%` });
     } catch (err) {
-      console.error("Falha na análise IA:", err);
       analysisResultForArtifacts.current = null;
-      toast({
-        title: "Falha na Análise IA",
-        description: err instanceof Error ? err.message : "Ocorreu um erro desconhecido.",
-        variant: "destructive",
-      });
+      toast({ title: "Falha Análise IA", description: err instanceof Error ? err.message : "Erro desconhecido.", variant: "destructive" });
+      setIsProcessingCapture(false); // Ensure processing flag is reset on error too
     }
-  };
+  }, [isCameraActive, isProcessingCapture, mediaRecorderRef, canvasRef, videoRef, toast, addAnalyzedEvent, settings.enableAutoMotionDetection]);
 
-  const handleSimulateMotion = () => {
-    if (isLoadingSettings || !settings.enableSimulatedAutoCapture || !isCameraActive || isProcessingCapture) {
-      if (isLoadingSettings) {
-         toast({ title: "Aguarde", description: "Carregando configurações...", variant: "default"});
-      } else if (!settings.enableSimulatedAutoCapture) {
-         toast({ title: "Simulação Desativada", description: "Ative a captura automática simulada nas configurações.", variant: "default"});
-      } else if (!isCameraActive) {
-         toast({ title: "Câmera Inativa", description: "A câmera precisa estar ativa para simular detecção.", variant: "destructive"});
-      }
+  const processFrameForMotion = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current || !isCameraActive || isProcessingCapture || captureCooldownRef.current || isLoadingSettings || !settings.enableAutoMotionDetection) {
       return;
     }
-    toast({ title: "Simulação Acionada", description: "Detecção de movimento simulada. Iniciando captura e análise...", duration: 2000});
-    handleCaptureAndAnalyze();
-  };
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    canvas.width = video.videoWidth / 4; // Process smaller image for performance
+    canvas.height = video.videoHeight / 4;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const currentFrame = context.getImageData(0, 0, canvas.width, canvas.height);
+    
+    if (lastFrameDataRef.current) {
+      let changedPixels = 0;
+      const data = currentFrame.data;
+      const lastData = lastFrameDataRef.current.data;
+      const sensitivityThreshold = (100 - settings.motionSensitivity) / 100 * 50; // Smaller value = more sensitive
+      const brightnessThreshold = settings.minBrightness / 100 * 255;
+      const pixelStep = 5; // Analyze every 5th pixel
+
+      for (let y = 0; y < canvas.height; y += pixelStep) {
+        for (let x = 0; x < canvas.width; x += pixelStep) {
+          const i = (y * canvas.width + x) * 4;
+          const currentBrightness = (data[i] + data[i+1] + data[i+2]) / 3;
+          
+          if (currentBrightness < brightnessThreshold) continue; // Ignore dark pixels
+
+          const lastBrightness = (lastData[i] + lastData[i+1] + lastData[i+2]) / 3;
+          if (Math.abs(currentBrightness - lastBrightness) > sensitivityThreshold) {
+            changedPixels++;
+          }
+        }
+      }
+      // Very rough proxy for minObjectSize. Higher minObjectSize = needs more changed pixels.
+      const minChangedPixelsToTrigger = settings.minObjectSize * 2; 
+      if (changedPixels > minChangedPixelsToTrigger) {
+        console.log(`Movimento detectado! Pixels alterados: ${changedPixels}`);
+        handleCaptureAndAnalyze('auto');
+      }
+    }
+    lastFrameDataRef.current = currentFrame;
+  }, [isCameraActive, isProcessingCapture, isLoadingSettings, settings, handleCaptureAndAnalyze]);
+
+  const startAutoDetectionLogic = useCallback(() => {
+    if (isLoadingSettings || !isCameraActive || !settings.enableAutoMotionDetection || isProcessingCapture || autoDetectionIntervalRef.current) {
+      return;
+    }
+    
+    if (!videoRef.current || !canvasRef.current) return;
+
+    setIsAutoDetectingActive(true);
+    lastFrameDataRef.current = null; // Reset last frame
+    autoDetectionIntervalRef.current = setInterval(processFrameForMotion, 1000); // Process 1 frame per second
+    console.log("Detecção automática iniciada.");
+
+  }, [isLoadingSettings, isCameraActive, settings.enableAutoMotionDetection, isProcessingCapture, processFrameForMotion]);
+
+  useEffect(() => {
+    if (!isLoadingSettings && isCameraActive && settings.enableAutoMotionDetection && !isProcessingCapture) {
+      startAutoDetectionLogic();
+    } else {
+      stopAutoDetectionLogic();
+    }
+    // Cleanup interval on unmount or when dependencies change causing detection to stop
+    return () => {
+      stopAutoDetectionLogic();
+    };
+  }, [isLoadingSettings, isCameraActive, settings.enableAutoMotionDetection, isProcessingCapture, startAutoDetectionLogic, stopAutoDetectionLogic]);
 
 
   return (
@@ -381,7 +358,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
           Feed da Câmera ao Vivo
         </CardTitle>
         <CardDescription>
-          Monitoramento em tempo real. Clique abaixo para capturar ou simular detecção.
+          Monitoramento em tempo real. A detecção automática pode ser ativada nas configurações.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -423,7 +400,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button
-              onClick={handleCaptureAndAnalyze}
+              onClick={() => handleCaptureAndAnalyze('manual')}
               disabled={!isCameraActive || isProcessingCapture || isSwitchingCamera || isLoadingSettings}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
               aria-label="Capturar Quadro, Gravar Vídeo e Analisar Manualmente"
@@ -436,45 +413,40 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
               {isProcessingCapture ? 'Processando...' : 'Capturar Manual'}
             </Button>
             
-            <Button
-              onClick={handleSimulateMotion}
-              disabled={isLoadingSettings || !settings.enableSimulatedAutoCapture || !isCameraActive || isProcessingCapture || isSwitchingCamera}
-              variant={settings.enableSimulatedAutoCapture ? "default" : "outline"}
-              className={settings.enableSimulatedAutoCapture ? "bg-accent hover:bg-accent/90 text-accent-foreground" : ""}
-              aria-label="Simular Detecção de Movimento e Capturar"
-            >
-              {isProcessingCapture && settings.enableSimulatedAutoCapture ? (
-                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                 <Waves className="mr-2 h-4 w-4" />
-              )}
-              {isProcessingCapture && settings.enableSimulatedAutoCapture ? 'Processando...' : 'Simular Detecção'}
-            </Button>
-
-        </div>
-        <div className="flex justify-end mt-2">
-             {videoDeviceCount > 1 && (
+            {videoDeviceCount > 1 && (
                  <Button 
                     onClick={handleSwitchCamera} 
                     variant="outline"
-                    size="icon"
                     disabled={isSwitchingCamera || isProcessingCapture || isLoadingSettings}
                     aria-label="Alternar câmera"
                     title="Alternar Câmera"
+                    className="w-full"
                  >
                     {isSwitchingCamera ? <Loader2 className="h-5 w-5 animate-spin" /> : <SwitchCamera className="h-5 w-5" />}
+                    Alternar Câmera
                  </Button>
             )}
         </div>
+        
         {isProcessingCapture && (
           <div className="mt-2 text-center text-sm text-muted-foreground">
             <p>Realizando análise IA e preparando arquivos para download...</p>
             <p>Isso pode levar alguns segundos.</p>
           </div>
         )}
-         {!isLoadingSettings && !settings.enableSimulatedAutoCapture && (
+
+        {!isLoadingSettings && settings.enableAutoMotionDetection && (
+          <div className={cn("mt-3 text-sm flex items-center justify-center p-2 rounded-md border", 
+            isAutoDetectingActive ? "bg-green-500/10 border-green-500/30 text-green-300" : "bg-muted/50 border-border text-muted-foreground"
+          )}>
+            <Waves className="mr-2 h-4 w-4" />
+            {isAutoDetectingActive ? 'Detecção automática ATIVA' : 'Detecção automática INATIVA'}
+            {isCaptureCooldownActive && <span className="ml-2 text-xs">(Resfriando...)</span>}
+          </div>
+        )}
+         {!isLoadingSettings && !settings.enableAutoMotionDetection && (
             <p className="mt-3 text-xs text-center text-muted-foreground">
-                Para ativar a simulação de captura automática, vá para <a href="/settings" className="underline hover:text-primary">Configurações</a>.
+                Para ativar a detecção automática de movimento, vá para <a href="/settings" className="underline hover:text-primary">Configurações</a>.
             </p>
         )}
       </CardContent>
