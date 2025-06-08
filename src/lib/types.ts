@@ -1,6 +1,9 @@
 
-import type { AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
-import type { AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
+import type { AnalyzeUapMediaOutput as InternalAnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
+import type { AnalyzeObjectTrailOutput as InternalAnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
+
+export type { InternalAnalyzeUapMediaOutput as AnalyzeUapMediaOutput };
+export type { InternalAnalyzeObjectTrailOutput as AnalyzeObjectTrailOutput };
 
 export enum AnalysisType {
   UAP = 'uap',
@@ -15,7 +18,7 @@ export interface AnalyzedEvent {
   thumbnailUrl?: string; 
   mediaName: string;
   analysisType: AnalysisType;
-  analysis: AnalyzeUapMediaOutput | AnalyzeObjectTrailOutput; // Union type for different analysis results
+  analysis: InternalAnalyzeUapMediaOutput | InternalAnalyzeObjectTrailOutput; // Union type for different analysis results
 }
 
 export interface AppSettings {

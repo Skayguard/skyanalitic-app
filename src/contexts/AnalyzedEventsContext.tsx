@@ -2,7 +2,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import type { AnalyzedEvent, AnalysisType, AnalyzeUapMediaOutput, AnalyzeObjectTrailOutput } from '@/lib/types';
+import { AnalysisType } from '@/lib/types';
+import type { AnalyzedEvent, AnalyzeUapMediaOutput, AnalyzeObjectTrailOutput } from '@/lib/types';
 import { db, storage } from '@/lib/firebase/config'; // Import storage
 import { useAuth } from './AuthContext';
 import { 
