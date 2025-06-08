@@ -4,7 +4,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Camera, VideoOff, Zap, Loader2, Download, SwitchCamera, AlertTriangle } from 'lucide-react';
+import { Camera, VideoOff, Zap, Loader2, SwitchCamera, AlertTriangle, Waves } from 'lucide-react'; // Adicionado Waves
 import { useToast } from '@/hooks/use-toast';
 import { analyzeUapMedia, type AnalyzeUapMediaOutput } from '@/ai/flows/analyze-uap-media';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
@@ -19,10 +19,12 @@ export function CameraFeed() {
   const [isProcessingCapture, setIsProcessingCapture] = useState(false);
   const { toast } = useToast();
   const { addAnalyzedEvent } = useAnalyzedEvents();
-  const { settings } = useSettings();
+  const { settings, isLoading: isLoadingSettings } = useSettings(); // Adicionado isLoadingSettings
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const analysisResultForArtifacts = useRef<AnalyzeUapMediaOutput | null>(null);
+
 
   const [currentFacingMode, setCurrentFacingMode] = useState<'environment' | 'user'>('environment');
   const [videoDeviceCount, setVideoDeviceCount] = useState(0);
@@ -47,7 +49,6 @@ export function CameraFeed() {
       videoRef.current.srcObject = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      // Remove o handler onstop antes de parar para evitar acionar lógica de download indesejada
       mediaRecorderRef.current.onstop = null; 
       mediaRecorderRef.current.stop();
     }
@@ -59,7 +60,7 @@ export function CameraFeed() {
   const initializeCamera = useCallback(async () => {
     stopCurrentStreamAndRecorder();
     setError(null);
-    setIsSwitchingCamera(true); // Indica que estamos no processo de (re)inicializar
+    setIsSwitchingCamera(true); 
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setError("Acesso à câmera não suportado por este navegador.");
@@ -80,7 +81,7 @@ export function CameraFeed() {
       }
 
       const constraints: MediaStreamConstraints = { video: {} };
-      if (videoDevices.length > 0) { // Tentar usar facingMode se houver câmeras
+      if (videoDevices.length > 0) { 
          (constraints.video as MediaTrackConstraints).facingMode = currentFacingMode;
       }
       
@@ -90,16 +91,16 @@ export function CameraFeed() {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (err) {
         console.warn(`Falha ao obter câmera com facingMode: ${currentFacingMode}. Tentando default sem facingMode. Erro:`, err);
-        stream = await navigator.mediaDevices.getUserMedia({ video: true }); // Fallback
+        stream = await navigator.mediaDevices.getUserMedia({ video: true }); 
       }
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
             setIsCameraActive(true);
-            setError(null); // Limpa erro se a conexão for bem-sucedida
+            setError(null); 
         };
-        // Setup MediaRecorder
+        
         const mimeTypes = [
           'video/webm; codecs=vp9',
           'video/webm; codecs=vp8',
@@ -122,7 +123,6 @@ export function CameraFeed() {
               recordedChunksRef.current.push(event.data);
             }
           };
-          // O onstop será definido dinamicamente em handleCaptureAndAnalyze
         } else {
           console.error("Nenhum formato de gravação de vídeo suportado.");
           toast({ title: "Gravação de Vídeo", description: "Formato de vídeo para gravação não suportado.", variant: "destructive" });
@@ -133,7 +133,6 @@ export function CameraFeed() {
       console.error("Erro detalhado ao acessar câmera:", err);
       let errorMessage = "Não foi possível acessar a câmera. Verifique as permissões.";
       if (err instanceof Error) {
-        // Tenta dar mensagens mais específicas
         if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
             errorMessage = "Permissão para câmera negada. Por favor, habilite nas configurações do navegador.";
         } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
@@ -148,7 +147,7 @@ export function CameraFeed() {
         }
       }
       setError(errorMessage);
-      setIsCameraActive(false); // Garante que a câmera seja marcada como inativa em caso de erro
+      setIsCameraActive(false); 
     } finally {
         setIsSwitchingCamera(false);
     }
@@ -156,29 +155,24 @@ export function CameraFeed() {
 
   useEffect(() => {
     initializeCamera();
-    // A limpeza principal é feita por stopCurrentStreamAndRecorder, chamada no início de initializeCamera
-    // ou quando o componente é desmontado.
     return () => {
       stopCurrentStreamAndRecorder();
     };
-  }, [initializeCamera]); // initializeCamera já inclui currentFacingMode e stopCurrentStreamAndRecorder como dependências indiretas ou diretas.
+  }, [initializeCamera]); 
 
 
   const handleSwitchCamera = () => {
-    if (videoDeviceCount < 2 && !isSwitchingCamera) { // Adicionado !isSwitchingCamera para evitar cliques múltiplos
+    if (videoDeviceCount < 2 && !isSwitchingCamera) { 
       toast({ title: "Troca de Câmera", description: "Nenhuma outra câmera disponível.", variant: "default" });
       return;
     }
-    if (isSwitchingCamera) return; // Previne trocas rápidas enquanto uma está em progresso
+    if (isSwitchingCamera) return; 
 
     console.log("Alternando câmera...");
     setCurrentFacingMode(prevMode => prevMode === 'environment' ? 'user' : 'environment');
-    // O useEffect [initializeCamera] vai reagir à mudança de currentFacingMode e chamar initializeCamera.
   };
 
-
   const extractFrameAndDownload = async (videoElement: HTMLVideoElement, time: number, fileName: string, canvas: HTMLCanvasElement) => {
-    // ... (código existente sem alteração)
     return new Promise<void>((resolve, reject) => {
       const onSeeked = () => {
         videoElement.removeEventListener('seeked', onSeeked);
@@ -204,7 +198,7 @@ export function CameraFeed() {
       if (videoElement.readyState >= 2) { 
         videoElement.currentTime = time;
       } else {
-        videoElement.oncanplay = () => { // Usar oncanplay para garantir que o vídeo esteja pronto
+        videoElement.oncanplay = () => { 
           videoElement.currentTime = time;
           videoElement.oncanplay = null; 
         }
@@ -219,14 +213,11 @@ export function CameraFeed() {
     originalCaptureTimestamp: string,
     eventId: string
   ) => {
-    // ... (código existente sem alteração)
     if (!canvasRef.current) {
       toast({ title: "Erro nos Artefatos", description: "Referência do canvas não encontrada.", variant: "destructive" });
       return;
     }
     const canvas = canvasRef.current;
-  
-    
     const tempVideoEl = document.createElement('video');
     tempVideoEl.src = URL.createObjectURL(videoBlob);
     tempVideoEl.muted = true; 
@@ -234,7 +225,7 @@ export function CameraFeed() {
 
     await new Promise<void>((resolve, reject) => {
       tempVideoEl.onloadedmetadata = () => {
-        tempVideoEl.play().then(() => { // Tenta dar play/pause para garantir que o frame seja carregável
+        tempVideoEl.play().then(() => { 
           tempVideoEl.pause();
           resolve();
         }).catch(reject);
@@ -244,7 +235,6 @@ export function CameraFeed() {
     });
   
     try {
-      // Tenta extrair frame em 0.1s, que é mais provável de estar disponível
       await extractFrameAndDownload(tempVideoEl, 0.1, `${baseFileName}_foto.png`, canvas); 
       toast({ title: "Foto Extraída", description: "1 foto foi baixada do vídeo.", duration: 3000 });
     } catch (e) {
@@ -265,6 +255,7 @@ Navegador (User Agent): ${navigator.userAgent}
 Câmera Usada: ${currentFacingMode}
 
 Configurações da Aplicação no Momento da Captura:
+  Captura Automática Simulada: ${settings.enableSimulatedAutoCapture ? 'Ativada' : 'Desativada'}
   Sensibilidade ao Movimento: ${settings.motionSensitivity}%
   Brilho Mínimo para Captura: ${settings.minBrightness}%
   Tamanho Mínimo de Objeto: ${settings.minObjectSize} unidades
@@ -289,7 +280,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
       return;
     }
 
-    setIsProcessingCapture(true); // Inicia o processamento
+    setIsProcessingCapture(true); 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     canvas.width = video.videoWidth;
@@ -311,7 +302,6 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
     mediaRecorderRef.current.start();
     toast({ title: "Gravação Iniciada", description: "Gravando vídeo de 5 segundos...", duration: 3000 });
 
-    // Define o handler onstop AQUI, específico para esta gravação
     mediaRecorderRef.current.onstop = async () => {
       toast({ title: "Gravação Concluída", description: "Processando vídeo gravado...", duration: 2000 });
       const videoBlob = new Blob(recordedChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'video/webm' });
@@ -322,32 +312,27 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
          toast({ title: "Gravação Falhou", description: "Nenhum dado de vídeo foi gravado.", variant: "destructive"});
       }
 
-      // A análise IA do frame já foi disparada, aqui esperamos o resultado dela
-      // para poder incluir no generateAndDownloadArtifacts
-      // Esta parte pode precisar de um Promise para esperar o resultado da análise IA
-      // Se a análise falhar, analysisResult será null.
       if (analysisResultForArtifacts.current) {
         await generateAndDownloadArtifacts(videoBlob, analysisResultForArtifacts.current, mediaName, captureTimestamp, eventId);
       } else {
         toast({ title: "Geração de Artefatos", description: "Análise IA não concluída ou falhou, foto e TXT podem não ter todos os dados.", variant: "default" });
       }
-      setIsProcessingCapture(false); // Finaliza o processamento aqui
-      analysisResultForArtifacts.current = null; // Limpa para a próxima
+      setIsProcessingCapture(false); 
+      analysisResultForArtifacts.current = null; 
     };
 
 
     setTimeout(() => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-        mediaRecorderRef.current.stop(); // Isso vai acionar o onstop definido acima
+        mediaRecorderRef.current.stop(); 
       }
     }, 5000);
 
-    // Armazena o resultado da análise para uso no onstop
-    const analysisResultForArtifacts = React.useRef<AnalyzeUapMediaOutput | null>(null);
+    analysisResultForArtifacts.current = null; // Reset before new analysis
 
     try {
       const result = await analyzeUapMedia({ mediaDataUri: initialFrameDataUri });
-      analysisResultForArtifacts.current = result; // Salva para usar no onstop
+      analysisResultForArtifacts.current = result; 
       const newEvent = {
         id: eventId,
         timestamp: captureTimestamp,
@@ -356,7 +341,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         analysis: result,
         analysisType: AnalysisType.UAP,
       };
-      addAnalyzedEvent(newEvent); // Isso agora deve fazer upload para o Storage se necessário
+      addAnalyzedEvent(newEvent); 
       toast({
         title: "Análise IA Concluída",
         description: `Probabilidade de UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%`,
@@ -369,11 +354,22 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
         description: err instanceof Error ? err.message : "Ocorreu um erro desconhecido.",
         variant: "destructive",
       });
-      // Mesmo se a análise IA falhar, o MediaRecorder.stop() será chamado pelo setTimeout,
-      // o que pode acionar o onstop. O onstop deve lidar com analysisResultForArtifacts.current sendo null.
-      // Não é ideal colocar setIsProcessingCapture(false) aqui porque a gravação ainda está ocorrendo.
     }
-    // Não definir setIsProcessingCapture(false) aqui, pois onstop cuidará disso.
+  };
+
+  const handleSimulateMotion = () => {
+    if (isLoadingSettings || !settings.enableSimulatedAutoCapture || !isCameraActive || isProcessingCapture) {
+      if (isLoadingSettings) {
+         toast({ title: "Aguarde", description: "Carregando configurações...", variant: "default"});
+      } else if (!settings.enableSimulatedAutoCapture) {
+         toast({ title: "Simulação Desativada", description: "Ative a captura automática simulada nas configurações.", variant: "default"});
+      } else if (!isCameraActive) {
+         toast({ title: "Câmera Inativa", description: "A câmera precisa estar ativa para simular detecção.", variant: "destructive"});
+      }
+      return;
+    }
+    toast({ title: "Simulação Acionada", description: "Detecção de movimento simulada. Iniciando captura e análise...", duration: 2000});
+    handleCaptureAndAnalyze();
   };
 
 
@@ -385,7 +381,7 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
           Feed da Câmera ao Vivo
         </CardTitle>
         <CardDescription>
-          Monitoramento em tempo real. Clique abaixo para capturar, gravar por 5s e analisar.
+          Monitoramento em tempo real. Clique abaixo para capturar ou simular detecção.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -425,26 +421,44 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
           )}
         </div>
         <canvas ref={canvasRef} style={{ display: 'none' }} />
-        <div className="flex gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button
               onClick={handleCaptureAndAnalyze}
-              disabled={!isCameraActive || isProcessingCapture || isSwitchingCamera}
-              className="flex-grow bg-primary hover:bg-primary/90 text-primary-foreground"
-              aria-label="Capturar Quadro, Gravar Vídeo e Analisar"
+              disabled={!isCameraActive || isProcessingCapture || isSwitchingCamera || isLoadingSettings}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              aria-label="Capturar Quadro, Gravar Vídeo e Analisar Manualmente"
             >
               {isProcessingCapture ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Zap className="mr-2 h-4 w-4" />
               )}
-              {isProcessingCapture ? 'Processando...' : 'Capturar & Analisar'}
+              {isProcessingCapture ? 'Processando...' : 'Capturar Manual'}
             </Button>
-            {videoDeviceCount > 1 && (
+            
+            <Button
+              onClick={handleSimulateMotion}
+              disabled={isLoadingSettings || !settings.enableSimulatedAutoCapture || !isCameraActive || isProcessingCapture || isSwitchingCamera}
+              variant={settings.enableSimulatedAutoCapture ? "default" : "outline"}
+              className={settings.enableSimulatedAutoCapture ? "bg-accent hover:bg-accent/90 text-accent-foreground" : ""}
+              aria-label="Simular Detecção de Movimento e Capturar"
+            >
+              {isProcessingCapture && settings.enableSimulatedAutoCapture ? (
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                 <Waves className="mr-2 h-4 w-4" />
+              )}
+              {isProcessingCapture && settings.enableSimulatedAutoCapture ? 'Processando...' : 'Simular Detecção'}
+            </Button>
+
+        </div>
+        <div className="flex justify-end mt-2">
+             {videoDeviceCount > 1 && (
                  <Button 
                     onClick={handleSwitchCamera} 
                     variant="outline"
                     size="icon"
-                    disabled={isSwitchingCamera || isProcessingCapture}
+                    disabled={isSwitchingCamera || isProcessingCapture || isLoadingSettings}
                     aria-label="Alternar câmera"
                     title="Alternar Câmera"
                  >
@@ -457,6 +471,11 @@ Comparações com Banco de Dados (IA): ${analysisData.databaseComparisons}
             <p>Realizando análise IA e preparando arquivos para download...</p>
             <p>Isso pode levar alguns segundos.</p>
           </div>
+        )}
+         {!isLoadingSettings && !settings.enableSimulatedAutoCapture && (
+            <p className="mt-3 text-xs text-center text-muted-foreground">
+                Para ativar a simulação de captura automática, vá para <a href="/settings" className="underline hover:text-primary">Configurações</a>.
+            </p>
         )}
       </CardContent>
     </Card>
