@@ -61,6 +61,7 @@ export default function AnalysisDetailsPage() {
 
     if (analyzedEvents && analyzedEvents.length > 0) {
       const foundEvent = analyzedEvents.find(e => e.id === pageEventId);
+      console.log('[AnalysisDetailsPage] Found event in context:', foundEvent); // Added log
       setEvent(foundEvent || null);
     } else {
       // If context is loaded but analyzedEvents is empty, and we have a pageEventId, it's not found.
@@ -128,7 +129,7 @@ export default function AnalysisDetailsPage() {
             <CardContent className="p-4 pt-0"> {/* Adjusted padding */}
               <h2 className="text-md font-semibold mb-2 text-foreground">{event.mediaName}</h2>
               <p className="text-xs text-muted-foreground mb-3">
-                Capturado em: {new Date(event.timestamp).toLocaleString('pt-BR')}
+                Capturado em: {event.timestamp ? new Date(event.timestamp).toLocaleString('pt-BR') : 'Data indisponível'}
               </p>
               {event.thumbnailUrl && (
                 <Image
