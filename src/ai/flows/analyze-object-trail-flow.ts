@@ -45,17 +45,17 @@ const analyzeObjectTrailFlow = ai.defineFlow(
         name: 'generateTrailDescriptionPrompt',
         input: { schema: AnalyzeObjectTrailInputSchema },
         output: { schema: z.object({ description: z.string() }) },
-        prompt: `Analise o seguinte vídeo: {{media url=videoDataUri}}.
-        Responda em português do Brasil.
-        Identifique o objeto em movimento principal. Descreva seu rastro ou caminho de movimento em detalhes.
-        Inclua informações sobre sua trajetória aparente, quaisquer mudanças de direção ou velocidade,
-        e suas características visuais enquanto se move. Se houver múltiplos objetos, foque no mais proeminente ou anômalo.
-        Se nenhum objeto em movimento claro ou rastro puder ser identificado, afirme isso.`,
+        prompt: `Responda em português do Brasil.
+Analise o seguinte vídeo: {{media url=videoDataUri}}.
+Identifique o objeto em movimento principal. Descreva seu rastro ou caminho de movimento em detalhes.
+Inclua informações sobre sua trajetória aparente, quaisquer mudanças de direção ou velocidade,
+e suas características visuais enquanto se move. Se houver múltiplos objetos, foque no mais proeminente ou anômalo.
+Se nenhum objeto em movimento claro ou rastro puder ser identificado, afirme isso.`,
          // Using the default model specified in ai configuration (gemini-2.0-flash)
       });
 
       const { output: descriptionOutput } = await descriptionPrompt(input);
-      const trailDescription = descriptionOutput?.description || "Não foi possível gerar uma descrição do rastro a partir do vídeo.";
+      const trailDescription = descriptionOutput?.description || "Não foi possível gerar uma descrição do rastro a partir do vídeo (instrução para o modelo não atendida ou erro).";
 
       // Then, attempt to generate an image of the trail using Gemini 2.0 Flash with image generation capabilities.
       let trailImageUri: string | undefined = undefined;
@@ -64,11 +64,12 @@ const analyzeObjectTrailFlow = ai.defineFlow(
       try {
         const imageGenResponse = await ai.generate({
             model: 'googleai/gemini-2.0-flash-exp',
-            prompt: `Baseado na análise deste vídeo: {{media url=videoDataUri}}, e focando no rastro do objeto em movimento principal que foi descrito como: "${trailDescription}".
-            Gere uma única imagem que represente visualmente o rastro deste objeto. A imagem deve retratar o objeto em vários pontos ao longo de sua trajetória, sobreposto a um fundo que reflita o cenário geral do vídeo.
-            Isso deve criar um efeito de "rastro de movimento" ou "longa exposição" para o objeto.
-            Se o vídeo for muito complexo, ou o objeto não estiver claro, ou você não puder razoavelmente criar tal imagem de rastro, produza um placeholder simples ou indique falha na parte textual da sua resposta.
-            Qualquer texto na sua resposta deve ser em português do Brasil.`,
+            prompt: `Responda em português do Brasil.
+Baseado na análise deste vídeo: {{media url=videoDataUri}}, e focando no rastro do objeto em movimento principal que foi descrito como: "${trailDescription}".
+Gere uma única imagem que represente visualmente o rastro deste objeto. A imagem deve retratar o objeto em vários pontos ao longo de sua trajetória, sobreposto a um fundo que reflita o cenário geral do vídeo.
+Isso deve criar um efeito de "rastro de movimento" ou "longa exposição" para o objeto.
+Se o vídeo for muito complexo, ou o objeto não estiver claro, ou você não puder razoavelmente criar tal imagem de rastro, produza um placeholder simples ou indique falha na parte textual da sua resposta.
+Qualquer texto na sua resposta deve ser em português do Brasil.`,
             config: {
               responseModalities: ['TEXT', 'IMAGE'], 
             },
@@ -83,7 +84,7 @@ const analyzeObjectTrailFlow = ai.defineFlow(
         }
 
       } catch (e) {
-        console.error("Error during trail image generation:", e);
+        console.error("[analyzeObjectTrailFlow] Error during trail image generation:", e);
         imageGenErrorMessage = `Ocorreu um erro técnico ao tentar gerar a imagem do rastro: ${(e as Error).message}.`;
       }
 
@@ -94,7 +95,7 @@ const analyzeObjectTrailFlow = ai.defineFlow(
       };
 
     } catch (flowError) {
-      console.error("Error in analyzeObjectTrailFlow:", flowError);
+      console.error("[analyzeObjectTrailFlow] Error in analyzeObjectTrailFlow:", flowError);
       return {
         trailDescription: "Falha ao analisar o rastro do objeto.",
         trailImageUri: undefined,

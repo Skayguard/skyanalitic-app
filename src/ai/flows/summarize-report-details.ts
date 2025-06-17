@@ -44,8 +44,8 @@ const summarizeReportDetailsPrompt = ai.definePrompt({
   name: 'summarizeReportDetailsPrompt',
   input: {schema: SummarizeReportDetailsInputSchema},
   output: {schema: SummarizeReportDetailsOutputSchema},
-  prompt: `Você é um especialista em resumir relatórios técnicos relacionados a Fenômenos Aéreos Não Identificados (UAP).
-Responda em português do Brasil.
+  prompt: `Responda em português do Brasil.
+Você é um especialista em resumir relatórios técnicos relacionados a Fenômenos Aéreos Não Identificados (UAP).
 Dados os detalhes técnicos, grau de anomalia, comparações com bancos de dados e a probabilidade de um evento UAP, crie um resumo conciso.
 
 Detalhes Técnicos: {{{technicalDetails}}}
