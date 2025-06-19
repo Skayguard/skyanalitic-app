@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { UserPlus, Loader2, Combine } from 'lucide-react';
+import { UserPlus, Loader2 } from 'lucide-react';
+import SkyAnalyticsLogo from '@/components/layout/SkyAnalyticsLogo';
 
 const registerSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um endereço de e-mail válido.' }),
@@ -66,16 +67,20 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-muted/30 p-4">
       <div className="flex items-center gap-2 mb-8 text-foreground">
-        <Combine className="h-8 w-8 text-primary" />
+        <SkyAnalyticsLogo className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold">SkyAnalytics</span>
       </div>
       <Card className="w-full max-w-md shadow-xl border-border">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2 text-card-foreground">
             <UserPlus className="h-6 w-6 text-primary" />
-            Crie Sua Conta
+            Crie Sua Conta no SkyAnalytics
           </CardTitle>
-          <CardDescription>Junte-se ao SkyAnalytics para desbloquear insights de dados poderosos.</CardDescription>
+          <CardDescription className="text-sm text-muted-foreground mt-2">
+            Monitore e analise o céu em tempo real com sua câmera.<br />
+            Use IA para capturar e identificar possíveis UAPs e fenômenos aéreos anômalos.<br />
+            Crie sua conta para começar a explorar.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
