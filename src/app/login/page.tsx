@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogIn, Loader2, Combine } from 'lucide-react';
+import { LogIn, Loader2 } from 'lucide-react';
+import SkyAnalyticsLogo from '@/components/layout/SkyAnalyticsLogo';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
@@ -63,16 +64,20 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-muted/30 p-4">
       <div className="flex items-center gap-2 mb-8 text-foreground">
-        <Combine className="h-8 w-8 text-primary" />
+        <SkyAnalyticsLogo className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold">SkyAnalytics</span>
       </div>
       <Card className="w-full max-w-md shadow-xl border-border">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2 text-card-foreground">
             <LogIn className="h-6 w-6 text-primary" />
-            Bem-vindo de Volta
+            Bem-vindo de volta ao SkyAnalytics
           </CardTitle>
-          <CardDescription>Faça login para acessar seu painel SkyAnalytics.</CardDescription>
+          <CardDescription className="text-sm text-muted-foreground mt-2">
+            Monitore e analise o céu em tempo real com sua câmera.<br />
+            Use IA para capturar e identificar possíveis UAPs e fenômenos aéreos anômalos.<br />
+            Acesse sua conta para começar.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -92,6 +97,7 @@ export default function LoginPage() {
                 <Label htmlFor="password">Senha</Label>
                 <Link href="/forgot-password" 
                   className="text-xs text-primary hover:underline"
+                  tabIndex={-1}
                 >
                   Esqueceu a senha?
                 </Link>
