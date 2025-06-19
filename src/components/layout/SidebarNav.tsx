@@ -4,14 +4,15 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, LogIn, UserPlus, LogOut, GitCommitHorizontal, Search } from 'lucide-react'; // Adicionado Search
+import { LayoutDashboard, Settings, LogIn, UserPlus, LogOut, GitCommitHorizontal, Search, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '../ui/button';
 
 const baseNavItems = [
-  { href: '/', label: 'Painel Principal', icon: LayoutDashboard, requiresAuth: true }, // Alterado de /upload para /
+  { href: '/', label: 'Painel Principal', icon: LayoutDashboard, requiresAuth: true },
   { href: '/trail-analysis', label: 'Análise de Rastro', icon: GitCommitHorizontal, requiresAuth: true },
+  { href: '/about', label: 'O que é o SkyAnalytics?', icon: Info, requiresAuth: true },
   { href: '/settings', label: 'Configurações', icon: Settings, requiresAuth: true },
 ];
 
