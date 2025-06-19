@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { MailCheck, ArrowLeft } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext'; // Opcional, para resend ou info
+import { useAuth } from '@/contexts/AuthContext'; 
 
 export default function VerifyEmailPage() {
   const { user, sendVerificationEmail, isLoading } = useAuth();
@@ -14,7 +14,6 @@ export default function VerifyEmailPage() {
   const handleResendEmail = async () => {
     if (user && !user.emailVerified) {
       await sendVerificationEmail(user);
-      // Adicionar toast de sucesso/erro aqui, se desejado
     }
   };
 
@@ -49,7 +48,7 @@ export default function VerifyEmailPage() {
           <Button asChild variant="default" className="w-full sm:w-auto">
             <Link href="/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para Login
+              Voltar para o Login
             </Link>
           </Button>
         </CardContent>

@@ -14,12 +14,12 @@ import {
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './SidebarNav';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, BarChartBig, Briefcase, Settings, LogIn, UserPlus, ChevronRight } from 'lucide-react';
-import SkyAnalyticsLogo from './SkyAnalyticsLogo'; // Import the new logo
+import { Loader2 } from 'lucide-react';
+import SkyAnalyticsLogo from './SkyAnalyticsLogo'; 
 import { Button } from '@/components/ui/button';
 
 const publicPaths = ['/login', '/register', '/verify-email'];
-const appCorePaths = ['/upload', '/trail-analysis', '/settings', '/analysis']; // Example core app paths for SkyAnalytics
+// const appCorePaths = ['/upload', '/trail-analysis', '/settings', '/analysis']; // Comentado, não usado ativamente
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -27,18 +27,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // If not loading, no user, not a public path, and not the landing page, redirect to login
     if (!isLoading && !user && !publicPaths.includes(pathname) && pathname !== '/') {
       router.push('/login');
     }
 
-    // If user is logged in and tries to access login/register, redirect them to an app page
     if (!isLoading && user && (pathname === '/login' || pathname === '/register')) {
-      router.push('/upload'); // Default app page for logged-in user, e.g. UAP app's /upload
+      router.push('/upload'); 
     }
   }, [user, isLoading, pathname, router]);
 
-  // Initial loading state for non-public/non-landing pages
   if (isLoading && !publicPaths.includes(pathname) && pathname !== '/') {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -47,21 +44,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // If it's a public path (like /login, /register) and auth is not loading
   if (publicPaths.includes(pathname) && !isLoading) {
-    // If user is already logged in and on login/register, they should have been redirected by useEffect.
-    // This renders the public page (e.g. login form)
     return <>{children}</>;
   }
 
-
-  // Landing Page Specific Layout (pathname === '/')
   if (pathname === '/') {
     return (
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2" aria-label="SkyAnalytics Home">
+            <Link href="/" className="flex items-center gap-2" aria-label="SkyAnalytics Início">
               <SkyAnalyticsLogo className="h-7 w-7 text-primary" />
               <span className="text-xl font-bold text-foreground">SkyAnalytics</span>
             </Link>
@@ -69,31 +61,29 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {user ? (
                 <>
                   <Button variant="outline" asChild>
-                     {/* This might point to a future SkyAnalytics dashboard */}
-                    <Link href="/upload">Dashboard</Link>
+                    <Link href="/upload">Painel</Link>
                   </Button>
-                  {/* Add a user profile/logout button here eventually */}
                 </>
               ) : (
                 <>
                   <Button variant="ghost" asChild>
-                    <Link href="/login">Login</Link>
+                    <Link href="/login">Entrar</Link>
                   </Button>
                   <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <Link href="/register">Get Started</Link>
+                    <Link href="/register">Cadastre-se</Link>
                   </Button>
                 </>
               )}
             </nav>
           </div>
         </header>
-        <main className="flex-1">{children}</main> {/* children is page.tsx */}
+        <main className="flex-1">{children}</main>
         <footer className="py-8 border-t bg-background">
           <div className="container mx-auto text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} SkyAnalytics. All rights reserved.
+            &copy; {new Date().getFullYear()} SkyAnalytics. Todos os direitos reservados.
             <div className="mt-2 space-x-4">
-              <Link href="/privacy" className="hover:text-primary">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-primary">Terms of Service</Link>
+              <Link href="/privacy" className="hover:text-primary">Política de Privacidade</Link>
+              <Link href="/terms" className="hover:text-primary">Termos de Serviço</Link>
             </div>
           </div>
         </footer>
@@ -101,19 +91,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Authenticated App Layout (for paths other than '/', e.g., /upload, /settings)
-  // Ensure user is authenticated for these paths (primary check already done by useEffect)
   if (!user && !isLoading) {
-     // This case should ideally be handled by the useEffect redirection.
-     // If it's reached, it's a fallback.
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4">Redirecting to login...</p>
+        <p className="ml-4">Redirecionando para login...</p>
       </div>
     );
   }
-
 
   return (
     <SidebarProvider defaultOpen>
@@ -131,7 +116,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset className="bg-background">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <SidebarTrigger className="sm:hidden text-foreground" />
-          {/* Optional: Breadcrumbs or dynamic page title can go here */}
         </header>
         <main className="flex-1 flex-col p-4 sm:p-6">
           {children}

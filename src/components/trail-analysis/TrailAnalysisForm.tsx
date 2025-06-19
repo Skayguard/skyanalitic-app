@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UploadCloud, Loader2, AlertTriangle, Film, GitCommitHorizontal } from 'lucide-react';
+import { UploadCloud, Loader2, AlertTriangle, GitCommitHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { analyzeObjectTrail, AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
+import { analyzeObjectTrail, type AnalyzeObjectTrailOutput } from '@/ai/flows/analyze-object-trail-flow';
 import { TrailAnalysisReport } from './TrailAnalysisReport';
 import { useAnalyzedEvents } from '@/contexts/AnalyzedEventsContext';
 import { AnalysisType } from '@/lib/types';
@@ -48,11 +48,9 @@ export function TrailAnalysisForm() {
       }
       
       setVideoFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setVideoPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+      const objectURL = URL.createObjectURL(selectedFile);
+      setVideoPreviewUrl(objectURL); 
+      
       toast({ title: "Vídeo Carregado", description: "Pronto para análise de rastro."});
     }
   };
@@ -68,55 +66,75 @@ export function TrailAnalysisForm() {
     setAnalysisResult(null);
     setError(null);
 
-    try {
-      const result = await analyzeObjectTrail({ videoDataUri: videoPreviewUrl });
-      setAnalysisResult(result);
-      
-      const newEventId = new Date().toISOString() + Math.random().toString(36).substring(2, 9);
-      await addAnalyzedEvent({
-        id: newEventId,
-        timestamp: new Date().toISOString(),
-        thumbnailUrl: result.trailImageUri || `https://placehold.co/300x200.png?text=Rastro`,
-        mediaName: videoFile.name,
-        analysisType: AnalysisType.TRAIL,
-        analysis: result,
-      });
-      
-      if (result.errorMessage && !result.trailImageUri) { // Show error toast only if it's a significant error and no image
-         toast({
-            title: "Aviso da Análise de Rastro",
-            description: result.errorMessage,
-            variant: "default", // Use default for warnings that might still produce some output
-            duration: 7000,
+    // Para enviar o vídeo para a IA, precisamos dele como Data URI
+    const reader = new FileReader();
+    reader.readAsDataURL(videoFile);
+    reader.onloadend = async () => {
+        const videoDataUri = reader.result as string;
+        try {
+          const result = await analyzeObjectTrail({ videoDataUri: videoDataUri });
+          setAnalysisResult(result);
+          
+          const newEventId = new Date().toISOString() + Math.random().toString(36).substring(2, 9);
+          await addAnalyzedEvent({
+            id: newEventId,
+            timestamp: new Date().toISOString(),
+            thumbnailUrl: result.trailImageUri || `https://placehold.co/300x200.png?text=Rastro`,
+            mediaName: videoFile.name,
+            analysisType: AnalysisType.TRAIL,
+            analysis: result,
           });
-      } else if (result.errorMessage && result.trailImageUri) { // Info toast if image generated despite other minor issues
-         toast({
-            title: "Análise de Rastro Concluída com Observações",
-            description: result.errorMessage, // Show the message
-            variant: "default",
-            duration: 7000,
-          });
-      }
-      else {
-        toast({
-            title: "Análise de Rastro Concluída",
-            description: "O relatório da análise de rastro está pronto e salvo.",
-          });
-      }
+          
+          if (result.errorMessage && !result.trailImageUri) { 
+             toast({
+                title: "Aviso da Análise de Rastro",
+                description: result.errorMessage,
+                variant: "default", 
+                duration: 7000,
+              });
+          } else if (result.errorMessage && result.trailImageUri) { 
+             toast({
+                title: "Análise de Rastro Concluída com Observações",
+                description: result.errorMessage, 
+                variant: "default",
+                duration: 7000,
+              });
+          }
+          else {
+            toast({
+                title: "Análise de Rastro Concluída",
+                description: "O relatório da análise de rastro está pronto e salvo.",
+              });
+          }
 
-    } catch (err) {
-      console.error("Falha na análise de rastro IA:", err);
-      const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise de rastro.";
-      setError(errorMessage);
-      toast({
-        title: "Falha na Análise de Rastro",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
+        } catch (err) {
+          console.error("Falha na análise de rastro IA:", err);
+          const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise de rastro.";
+          setError(errorMessage);
+          toast({
+            title: "Falha na Análise de Rastro",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        } finally {
+          setIsAnalyzing(false);
+        }
+    };
+    reader.onerror = () => {
+        setError("Falha ao ler o arquivo de vídeo para enviar à IA.");
+        toast({ title: "Erro de Leitura", description: "Não foi possível processar o vídeo para análise.", variant: "destructive" });
+        setIsAnalyzing(false);
+    };
   };
+
+  // Revoga a URL do objeto quando o componente é desmontado ou videoPreviewUrl muda
+  useEffect(() => {
+    return () => {
+      if (videoPreviewUrl && videoPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(videoPreviewUrl);
+      }
+    };
+  }, [videoPreviewUrl]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-xl">

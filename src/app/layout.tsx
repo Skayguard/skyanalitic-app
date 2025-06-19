@@ -8,8 +8,8 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'SkyAnalytics - Advanced Data Insights',
-  description: 'Unlock the power of your data with SkyAnalytics. Advanced insights and analytics solutions for businesses and tech professionals.',
+  title: 'SkyAnalytics - Insights Avançados de Dados',
+  description: 'Desbloqueie o poder dos seus dados com SkyAnalytics. Soluções avançadas de insights e análises para empresas e profissionais de tecnologia.',
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <SettingsProvider>
-            <AnalyzedEventsProvider> {/* Kept for existing app structure, SkyAnalytics might need its own context later */}
+            <AnalyzedEventsProvider> 
               <AppLayout>{children}</AppLayout>
               <Toaster />
             </AnalyzedEventsProvider>

@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { AnalyzedEvent, AnalysisType, AnalyzeUapMediaOutput, AnalyzeObjectTrailOutput } from '@/lib/types';
-import { db, storage } from '@/lib/firebase/config'; // Import storage
+import { db, storage } from '@/lib/firebase/config';
 import { useAuth } from './AuthContext';
 import { 
   collection, 
@@ -18,8 +18,8 @@ import {
   writeBatch,
   type FirestoreError
 } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL, deleteObject, type FirebaseStorageError } from "firebase/storage"; // Import storage functions
-import { useToast as useShadcnToast } from '@/hooks/use-toast'; // Renamed to avoid conflict
+import { ref, uploadString, getDownloadURL, deleteObject, type FirebaseStorageError } from "firebase/storage"; 
+import { useToast as useShadcnToast } from '@/hooks/use-toast'; 
 
 interface AnalyzedEventsContextType {
   analyzedEvents: AnalyzedEvent[];
@@ -32,7 +32,6 @@ const AnalyzedEventsContext = createContext<AnalyzedEventsContextType | undefine
 
 const EVENTS_COLLECTION = 'skyanalytic_analyzed_events';
 
-// Helper function to upload Data URI to Firebase Storage if needed
 const uploadDataUriToStorageIfNeeded = async (
   url: string | undefined,
   userId: string,
@@ -40,20 +39,20 @@ const uploadDataUriToStorageIfNeeded = async (
   filename: string,
   toast: ReturnType<typeof useShadcnToast>['toast'] 
 ): Promise<string | undefined> => {
-  console.log(`[AnalyzedEventsContext] uploadDataUriToStorageIfNeeded: Called for eventId: ${eventId}, filename: ${filename}. URL starts with:`, typeof url === 'string' ? url.substring(0, 30) : url);
+  console.log(`[AnalyzedEventsContext] uploadDataUriToStorageIfNeeded: Chamado para eventId: ${eventId}, filename: ${filename}. URL começa com:`, typeof url === 'string' ? url.substring(0, 30) : url);
   
   if (typeof url === 'string' && url.startsWith('data:')) {
     const storagePath = `userEvents/${userId}/${eventId}/${filename}`;
     const storageRef = ref(storage, storagePath);
     try {
-      console.log(`[AnalyzedEventsContext] Uploading to Storage: ${storagePath}`);
+      console.log(`[AnalyzedEventsContext] Enviando para Storage: ${storagePath}`);
       await uploadString(storageRef, url, 'data_url');
       const downloadURL = await getDownloadURL(storageRef);
-      console.log(`[AnalyzedEventsContext] Upload successful for ${filename}. Storage URL: ${downloadURL}`);
+      console.log(`[AnalyzedEventsContext] Upload bem-sucedido para ${filename}. URL do Storage: ${downloadURL}`);
       return downloadURL;
     } catch (uploadError) {
       const firebaseStorageError = uploadError as FirebaseStorageError;
-      console.error(`[AnalyzedEventsContext] Error uploading ${filename} to Firebase Storage (eventId: ${eventId}):`, firebaseStorageError);
+      console.error(`[AnalyzedEventsContext] Erro ao enviar ${filename} para Firebase Storage (eventId: ${eventId}):`, firebaseStorageError);
       let description = firebaseStorageError.message;
       if (firebaseStorageError.code === 'storage/retry-limit-exceeded') {
         description = `O upload de ${filename} falhou após múltiplas tentativas. Verifique sua conexão de rede e tente novamente. (${firebaseStorageError.message})`;
@@ -72,7 +71,7 @@ const uploadDataUriToStorageIfNeeded = async (
       return `https://placehold.co/300x200.png?text=ErroUpload_${filename.split('.')[0]}`; 
     }
   }
-  console.log(`[AnalyzedEventsContext] uploadDataUriToStorageIfNeeded: URL for ${filename} is not a Data URI or undefined, returning as is.`);
+  console.log(`[AnalyzedEventsContext] uploadDataUriToStorageIfNeeded: URL para ${filename} não é um Data URI ou indefinido, retornando como está.`);
   return url; 
 };
 
@@ -85,13 +84,13 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
 
   const fetchEvents = useCallback(async () => {
     if (!user) {
-      console.log('[AnalyzedEventsContext] fetchEvents: No user, clearing local events and stopping.');
+      console.log('[AnalyzedEventsContext] fetchEvents: Nenhum usuário, limpando eventos locais e parando.');
       setAnalyzedEvents([]);
       setIsLoading(false);
       return;
     }
     setIsLoading(true);
-    console.log('[AnalyzedEventsContext] fetchEvents: Fetching events for user:', user.uid);
+    console.log('[AnalyzedEventsContext] fetchEvents: Buscando eventos para usuário:', user.uid);
     try {
       const q = query(
         collection(db, EVENTS_COLLECTION), 
@@ -109,10 +108,10 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
         } as AnalyzedEvent; 
       });
       setAnalyzedEvents(eventsFromFirestore);
-      console.log('[AnalyzedEventsContext] fetchEvents: Successfully fetched', eventsFromFirestore.length, 'events. First event ID if any:', eventsFromFirestore[0]?.id);
+      console.log('[AnalyzedEventsContext] fetchEvents: Buscou com sucesso', eventsFromFirestore.length, 'eventos. ID do primeiro evento (se houver):', eventsFromFirestore[0]?.id);
     } catch (error) {
       const firestoreError = error as FirestoreError;
-      console.error("[AnalyzedEventsContext] Failed to load analyzed events from Firestore", firestoreError);
+      console.error("[AnalyzedEventsContext] Falha ao carregar eventos analisados do Firestore", firestoreError);
       toast({
         title: "Erro ao Carregar Eventos",
         description: `Não foi possível buscar seus eventos salvos. Detalhe: ${firestoreError.message}`,
@@ -121,21 +120,21 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       setAnalyzedEvents([]); 
     } finally {
       setIsLoading(false);
-      console.log('[AnalyzedEventsContext] fetchEvents: Finished fetching events.');
+      console.log('[AnalyzedEventsContext] fetchEvents: Concluída busca de eventos.');
     }
   }, [user, toast]);
 
   useEffect(() => {
-    console.log('[AnalyzedEventsContext] useEffect for fetchEvents triggered. Auth isLoading:', authIsLoading, 'User present:', !!user);
+    console.log('[AnalyzedEventsContext] useEffect para fetchEvents disparado. Auth isLoading:', authIsLoading, 'Usuário presente:', !!user);
     if (!authIsLoading) { 
       fetchEvents();
     }
   }, [user, authIsLoading, fetchEvents]);
 
   const addAnalyzedEvent = async (eventData: Omit<AnalyzedEvent, 'id' | 'firestoreDocId' | 'userId'> & { id: string }) => {
-    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Initiated for mediaName:', eventData.mediaName, 'with temp ID:', eventData.id);
+    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Iniciado para mediaName:', eventData.mediaName, 'com ID temp:', eventData.id);
     if (!user) {
-      console.error('[AnalyzedEventsContext] addAnalyzedEvent: User not authenticated. Aborting save.');
+      console.error('[AnalyzedEventsContext] addAnalyzedEvent: Usuário não autenticado. Abortando salvamento.');
       toast({
         title: "Usuário não autenticado",
         description: "Faça login para salvar seus eventos analisados.",
@@ -146,11 +145,11 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
     
     setIsLoading(true); 
     const newEventId = eventData.id; 
-    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Processing event with final ID:', newEventId);
+    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Processando evento com ID final:', newEventId);
 
     let storageThumbnailUrl: string | undefined;
     try {
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Attempting to upload thumbnail. Original thumbnailUrl (starts with):', typeof eventData.thumbnailUrl === 'string' ? eventData.thumbnailUrl.substring(0,30) : eventData.thumbnailUrl);
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Tentando enviar miniatura. thumbnailUrl original (começa com):', typeof eventData.thumbnailUrl === 'string' ? eventData.thumbnailUrl.substring(0,30) : eventData.thumbnailUrl);
       storageThumbnailUrl = await uploadDataUriToStorageIfNeeded(
         eventData.thumbnailUrl,
         user.uid,
@@ -158,16 +157,16 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
         'thumbnail.png',
         toast
       );
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Thumbnail URL after processing:', storageThumbnailUrl);
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: URL da miniatura após processamento:', storageThumbnailUrl);
     } catch (thumbError) {
-        console.error('[AnalyzedEventsContext] addAnalyzedEvent: Critical error during thumbnail upload that was not caught inside helper:', thumbError);
-        storageThumbnailUrl = `https://placehold.co/300x200.png?text=ErroCriticoThumb`;
+        console.error('[AnalyzedEventsContext] addAnalyzedEvent: Erro crítico durante upload da miniatura não capturado no helper:', thumbError);
+        storageThumbnailUrl = `https://placehold.co/300x200.png?text=ErroCriticoMiniatura`;
     }
 
     let processedAnalysis = eventData.analysis;
     if (eventData.analysisType === AnalysisType.TRAIL && (eventData.analysis as AnalyzeObjectTrailOutput).trailImageUri) {
       const trailAnalysis = eventData.analysis as AnalyzeObjectTrailOutput;
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Trail analysis detected. Attempting to upload trail image. Original trailImageUri (starts with):', typeof trailAnalysis.trailImageUri === 'string' ? trailAnalysis.trailImageUri.substring(0,30) : trailAnalysis.trailImageUri);
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Análise de rastro detectada. Tentando enviar imagem do rastro. trailImageUri original (começa com):', typeof trailAnalysis.trailImageUri === 'string' ? trailAnalysis.trailImageUri.substring(0,30) : trailAnalysis.trailImageUri);
       try {
         const storageTrailImageUri = await uploadDataUriToStorageIfNeeded(
           trailAnalysis.trailImageUri,
@@ -176,11 +175,11 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
           'trailImage.png',
           toast
         );
-        console.log('[AnalyzedEventsContext] addAnalyzedEvent: Trail image URL after processing:', storageTrailImageUri);
+        console.log('[AnalyzedEventsContext] addAnalyzedEvent: URL da imagem de rastro após processamento:', storageTrailImageUri);
         processedAnalysis = { ...trailAnalysis, trailImageUri: storageTrailImageUri };
       } catch (trailImgError) {
-          console.error('[AnalyzedEventsContext] addAnalyzedEvent: Critical error during trail image upload:', trailImgError);
-          processedAnalysis = { ...trailAnalysis, trailImageUri: `https://placehold.co/300x200.png?text=ErroCriticoTrailImg` };
+          console.error('[AnalyzedEventsContext] addAnalyzedEvent: Erro crítico durante upload da imagem de rastro:', trailImgError);
+          processedAnalysis = { ...trailAnalysis, trailImageUri: `https://placehold.co/300x200.png?text=ErroCriticoImgRastro` };
       }
     }
     
@@ -194,13 +193,12 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       analysis: processedAnalysis,
     };
 
-    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Event object prepared for Firestore:', JSON.stringify({ ...eventToSave, analysis: eventToSave.analysis ? "{...analysisData...}" : null }, null, 2));
-
+    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Objeto do evento preparado para Firestore:', JSON.stringify({ ...eventToSave, analysis: eventToSave.analysis ? "{...dadosDaAnalise...}" : null }, null, 2));
 
     try {
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Attempting to save to Firestore collection:', EVENTS_COLLECTION);
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Tentando salvar na coleção Firestore:', EVENTS_COLLECTION);
       const docRef = await addDoc(collection(db, EVENTS_COLLECTION), eventToSave);
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Successfully saved to Firestore. Document ID:', docRef.id);
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Salvo com sucesso no Firestore. ID do Documento:', docRef.id);
       
       const newEventForState: AnalyzedEvent = {
         ...eventData, 
@@ -209,15 +207,14 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
         userId: user.uid,
         thumbnailUrl: storageThumbnailUrl,
         analysis: processedAnalysis,
-        timestamp: eventData.timestamp, // Ensure string timestamp for local state consistency
+        timestamp: eventData.timestamp, 
       };
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Event prepared for local state update:', JSON.stringify({ ...newEventForState, analysis: newEventForState.analysis ? "{...analysisData...}" : null }, null, 2));
-
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Evento preparado para atualização do estado local:', JSON.stringify({ ...newEventForState, analysis: newEventForState.analysis ? "{...dadosDaAnalise...}" : null }, null, 2));
 
       setAnalyzedEvents(prevEvents => {
         const updatedEvents = [newEventForState, ...prevEvents]
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        console.log('[AnalyzedEventsContext] addAnalyzedEvent: Local state updated. New event count:', updatedEvents.length, 'New event ID:', newEventForState.id);
+        console.log('[AnalyzedEventsContext] addAnalyzedEvent: Estado local atualizado. Nova contagem de eventos:', updatedEvents.length, 'ID do novo evento:', newEventForState.id);
         return updatedEvents;
       });
       
@@ -227,7 +224,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       });
     } catch (firestoreError) {
       const fsError = firestoreError as FirestoreError;
-      console.error("[AnalyzedEventsContext] addAnalyzedEvent: Failed to save analyzed event to Firestore:", fsError);
+      console.error("[AnalyzedEventsContext] addAnalyzedEvent: Falha ao salvar evento analisado no Firestore:", fsError);
       toast({
         title: "Erro ao Salvar Evento no Banco de Dados",
         description: `Não foi possível salvar sua análise na nuvem. Detalhe: ${fsError.message} (Code: ${fsError.code})`,
@@ -235,7 +232,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       });
     } finally {
       setIsLoading(false);
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Finished processing for event ID:', newEventId);
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Processamento concluído para o ID do evento:', newEventId);
     }
   };
 
@@ -245,7 +242,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       return;
     }
     setIsLoading(true);
-    console.log('[AnalyzedEventsContext] clearAllEvents: Clearing events for user:', user.uid);
+    console.log('[AnalyzedEventsContext] clearAllEvents: Limpando eventos para o usuário:', user.uid);
     try {
       const q = query(collection(db, EVENTS_COLLECTION), where('userId', '==', user.uid));
       const querySnapshot = await getDocs(q);
@@ -261,41 +258,41 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       const storagePathsToDelete: string[] = [];
 
       querySnapshot.docs.forEach(docSnap => {
-        const event = docSnap.data() as Omit<AnalyzedEvent, 'timestamp'> & { timestamp: Timestamp }; // Firestore data
+        const event = docSnap.data() as Omit<AnalyzedEvent, 'timestamp'> & { timestamp: Timestamp }; 
         batch.delete(doc(db, EVENTS_COLLECTION, docSnap.id));
         
         const eventIdForStorage = event.id; 
         if (event.thumbnailUrl && event.thumbnailUrl.includes('firebasestorage.googleapis.com')) {
             const path = `userEvents/${user.uid}/${eventIdForStorage}/thumbnail.png`;
-            console.log(`[AnalyzedEventsContext] clearAllEvents: Queuing thumbnail for deletion: ${path}`);
+            console.log(`[AnalyzedEventsContext] clearAllEvents: Enfileirando miniatura para exclusão: ${path}`);
             storagePathsToDelete.push(path);
         }
         if (event.analysisType === AnalysisType.TRAIL) {
           const trailAnalysis = event.analysis as AnalyzeObjectTrailOutput;
           if (trailAnalysis.trailImageUri && trailAnalysis.trailImageUri.includes('firebasestorage.googleapis.com')) {
             const path = `userEvents/${user.uid}/${eventIdForStorage}/trailImage.png`;
-            console.log(`[AnalyzedEventsContext] clearAllEvents: Queuing trail image for deletion: ${path}`);
+            console.log(`[AnalyzedEventsContext] clearAllEvents: Enfileirando imagem de rastro para exclusão: ${path}`);
             storagePathsToDelete.push(path);
           }
         }
       });
       
-      console.log('[AnalyzedEventsContext] clearAllEvents: Committing Firestore batch delete for', querySnapshot.docs.length, 'documents.');
+      console.log('[AnalyzedEventsContext] clearAllEvents: Confirmando exclusão em lote do Firestore para', querySnapshot.docs.length, 'documentos.');
       await batch.commit();
 
-      console.log('[AnalyzedEventsContext] clearAllEvents: Deleting files from Storage. Paths count:', storagePathsToDelete.length, 'Unique paths:', [...new Set(storagePathsToDelete)].length);
+      console.log('[AnalyzedEventsContext] clearAllEvents: Excluindo arquivos do Storage. Contagem de caminhos:', storagePathsToDelete.length, 'Caminhos únicos:', [...new Set(storagePathsToDelete)].length);
       for (const storagePath of [...new Set(storagePathsToDelete)]) { 
         try {
           const fileRef = ref(storage, storagePath);
           await deleteObject(fileRef);
-          console.log(`[AnalyzedEventsContext] clearAllEvents: Successfully deleted from Storage: ${storagePath}`);
+          console.log(`[AnalyzedEventsContext] clearAllEvents: Excluído com sucesso do Storage: ${storagePath}`);
         } catch (storageError: any) {
            const fbStorageError = storageError as FirebaseStorageError;
           if (fbStorageError.code !== 'storage/object-not-found') {
-            console.warn(`[AnalyzedEventsContext] clearAllEvents: Failed to delete ${storagePath} from Storage:`, fbStorageError);
+            console.warn(`[AnalyzedEventsContext] clearAllEvents: Falha ao excluir ${storagePath} do Storage:`, fbStorageError);
              toast({ title: "Aviso ao Limpar Armazenamento", description: `Falha ao deletar ${storagePath.substring(storagePath.lastIndexOf('/') + 1)}. Pode ser necessário remover manualmente. (Code: ${fbStorageError.code})`, variant: "default", duration: 7000 });
           } else {
-             console.log(`[AnalyzedEventsContext] clearAllEvents: File not found (already deleted or path mismatch): ${storagePath}`);
+             console.log(`[AnalyzedEventsContext] clearAllEvents: Arquivo não encontrado (já excluído ou caminho incompatível): ${storagePath}`);
           }
         }
       }
@@ -307,7 +304,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       const genericError = error as Error & { code?: string };
-      console.error("[AnalyzedEventsContext] clearAllEvents: Failed to clear all events from Firestore or Storage", genericError);
+      console.error("[AnalyzedEventsContext] clearAllEvents: Falha ao limpar todos os eventos do Firestore ou Storage", genericError);
       toast({
         title: "Erro ao Limpar Eventos",
         description: `Não foi possível remover seus eventos. Detalhe: ${genericError.message} ${genericError.code ? `(Code: ${genericError.code})` : ''}`,
@@ -315,7 +312,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       });
     } finally {
       setIsLoading(false);
-       console.log('[AnalyzedEventsContext] clearAllEvents: Finished processing.');
+       console.log('[AnalyzedEventsContext] clearAllEvents: Processamento concluído.');
     }
   }
 
@@ -329,7 +326,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
 export function useAnalyzedEvents() {
   const context = useContext(AnalyzedEventsContext);
   if (context === undefined) {
-    throw new Error('useAnalyzedEvents must be used within an AnalyzedEventsProvider');
+    throw new Error('useAnalyzedEvents deve ser usado dentro de um AnalyzedEventsProvider');
   }
   return context;
 }

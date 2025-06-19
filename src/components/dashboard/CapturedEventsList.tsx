@@ -21,26 +21,28 @@ export function CapturedEventsList() {
   const renderEventItem = (event: AnalyzedEvent) => {
     let title = event.mediaName;
     let description = '';
-    let IconComponent = Search; // Default for UAP
+    let IconComponent = Search; 
     let probabilityText = '';
     let probabilityHigh = false;
 
     if (event.analysisType === AnalysisType.UAP) {
       const uapAnalysis = event.analysis as AnalyzeUapMediaOutput;
-      description = uapAnalysis.summary.substring(0, 70) + (uapAnalysis.summary.length > 70 ? '...' : '');
+      description = uapAnalysis.summary?.substring(0, 70) + (uapAnalysis.summary?.length > 70 ? '...' : '');
       const prob = uapAnalysis.probabilityOfGenuineUapEvent * 100;
       probabilityText = `Prob. UAP: ${prob.toFixed(0)}%`;
       probabilityHigh = prob > 50;
     } else if (event.analysisType === AnalysisType.TRAIL) {
       const trailAnalysis = event.analysis as AnalyzeObjectTrailOutput;
       title = `Rastro: ${event.mediaName}`;
-      description = trailAnalysis.trailDescription.substring(0, 70) + (trailAnalysis.trailDescription.length > 70 ? '...' : '');
+      description = trailAnalysis.trailDescription?.substring(0, 70) + (trailAnalysis.trailDescription?.length > 70 ? '...' : '');
       IconComponent = GitCommitHorizontal;
-      if (trailAnalysis.trailImageUri) {
+      if (trailAnalysis.trailImageUri && !trailAnalysis.trailImageUri.startsWith('https://placehold.co')) {
         probabilityText = 'Imagem de rastro gerada';
+      } else if (trailAnalysis.errorMessage && !trailAnalysis.trailImageUri) {
+        probabilityText = 'Rastro descrito (sem imagem)';
+        probabilityHigh = true; 
       } else {
         probabilityText = 'Rastro descrito';
-        probabilityHigh = true; // To use alert icon if no image
       }
     }
 
@@ -63,9 +65,9 @@ export function CapturedEventsList() {
                   {title}
                 </h3>
                 <p className="text-xs text-muted-foreground truncate">
-                  {new Date(event.timestamp).toLocaleDateString('pt-BR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  {event.timestamp ? new Date(event.timestamp).toLocaleDateString('pt-BR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Data inválida'}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">{description}</p>
+                <p className="text-xs text-muted-foreground truncate">{description || 'Descrição não disponível'}</p>
                 {probabilityText && (
                   <p className={cn(
                       "text-xs font-medium mt-0.5 truncate",

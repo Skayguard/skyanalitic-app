@@ -45,7 +45,6 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
   console.log('[AnalysisReport] ProbabilityPercent:', probabilityPercent, 'IsHighProbability:', isHighProbability);
 
   const DetailItem: React.FC<{ icon: React.ElementType, label: string, value: string | number | React.ReactNode, valueClassName?: string }> = ({ icon: Icon, label, value, valueClassName }) => {
-    // console.log(`[AnalysisReport] DetailItem: ${label}`, value); // Pode ser muito verboso, descomentar se necessário
     return (
       <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
         <dt className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -69,7 +68,7 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
           {timestamp && typeof timestamp === 'string' && (
             ` (Analisado em: ${new Date(timestamp).toLocaleString('pt-BR')})`
           )}
-          {!timestamp && (
+          {!timestamp && typeof timestamp === 'string' && (
             ` (Timestamp da análise indisponível)`
           )}
         </CardDescription>

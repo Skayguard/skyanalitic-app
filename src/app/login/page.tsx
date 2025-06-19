@@ -34,9 +34,13 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
+    await signIn(data.email, data.password);
+  };
+
   useEffect(() => {
     if (user) {
-      router.push('/upload'); // Redirect to an app page if already logged in
+      router.push('/upload'); 
     }
   }, [user, router]);
 
@@ -48,8 +52,6 @@ export default function LoginPage() {
     );
   }
 
-  // If user exists and auth is not loading, they should be redirected by the useEffect above.
-  // This prevents briefly showing the login form after a refresh if already logged in.
   if (user && !authLoading) {
     return (
        <div className="flex items-center justify-center min-h-screen bg-background">
@@ -60,7 +62,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
-      <Link href="/" className="flex items-center gap-2 mb-8" aria-label="SkyAnalytics Home">
+      <Link href="/" className="flex items-center gap-2 mb-8" aria-label="SkyAnalytics Início">
         <SkyAnalyticsLogo className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold text-foreground">SkyAnalytics</span>
       </Link>
@@ -68,37 +70,37 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2 text-foreground">
             <LogIn className="h-6 w-6 text-primary" />
-            Welcome Back
+            Bem-vindo de Volta
           </CardTitle>
-          <CardDescription>Sign in to access your SkyAnalytics dashboard.</CardDescription>
+          <CardDescription>Faça login para acessar seu painel SkyAnalytics.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Endereço de E-mail</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
-                placeholder="you@example.com"
+                placeholder="voce@exemplo.com"
                 className={errors.email ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" // Placeholder, page not created
+                <Label htmlFor="password">Senha</Label>
+                <Link href="/forgot-password"
                   className="text-xs text-primary hover:underline"
                 >
-                  Forgot password?
+                  Esqueceu a senha?
                 </Link>
               </div>
               <Input
                 id="password"
                 type="password"
                 {...register('password')}
-                placeholder="Your password"
+                placeholder="Sua senha"
                 className={errors.password ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
@@ -109,13 +111,13 @@ export default function LoginPage() {
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
               )}
-              Sign In
+              Entrar
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don’t have an account?{' '}
+            Não tem uma conta?{' '}
             <Link href="/register" className="font-medium text-primary hover:underline">
-              Sign up here
+              Cadastre-se aqui
             </Link>
           </p>
         </CardContent>

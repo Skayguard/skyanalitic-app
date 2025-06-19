@@ -9,7 +9,7 @@ import {
   signInWithEmailAndPassword, 
   signOut as firebaseSignOut, 
   sendEmailVerification,
-  AuthError
+  type AuthError
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
@@ -54,7 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         message = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
         break;
       case 'auth/user-not-found':
-      case 'auth/wrong-password':
+      case 'auth/wrong-password': // Firebase v9+ uses 'auth/invalid-credential' for both user-not-found and wrong-password
+      case 'auth/invalid-credential':
         message = 'E-mail ou senha incorretos.';
         break;
       case 'auth/user-disabled':
@@ -93,7 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/'); 
+      // Redirecionamento é tratado pelo useEffect no AppLayout
+      // router.push('/upload'); // Rota para o painel principal
     } catch (error) {
       handleAuthError(error as AuthError, 'Falha ao fazer login.');
     } finally {
@@ -121,6 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendVerificationEmail = async (userToSend: User) => {
     try {
       await sendEmailVerification(userToSend);
+      toast({
+        title: 'E-mail Enviado',
+        description: 'Um novo e-mail de verificação foi enviado.',
+      });
     } catch (error) {
       console.error('Falha ao enviar e-mail de verificação', error);
       toast({

@@ -65,14 +65,14 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
               <ImageIcon className="h-5 w-5 text-primary" />
               Imagem do Rastro Gerada pela IA
             </h3>
-            {result.trailImageUri && (
+            {result.trailImageUri && !result.trailImageUri.startsWith('https://placehold.co') && (
               <Button onClick={handleDownloadImage} variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
                 Baixar Imagem
               </Button>
             )}
           </div>
-          {result.trailImageUri ? (
+          {result.trailImageUri && !result.trailImageUri.startsWith('https://placehold.co') ? (
             <>
               <Image
                 src={result.trailImageUri}
@@ -96,16 +96,16 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
           )}
         </div>
         
-        {!result.errorMessage && result.trailImageUri && (
+        {!result.errorMessage && result.trailImageUri && !result.trailImageUri.startsWith('https://placehold.co') && (
             <div className="p-3 bg-green-500/10 border border-green-500/30 text-green-300 rounded-md flex items-center gap-2 text-sm">
                 <CheckCircle className="h-5 w-5 flex-shrink-0" />
                 <p>Análise de rastro e geração de imagem concluídas com sucesso.</p>
             </div>
         )}
-         {!result.errorMessage && !result.trailImageUri && result.trailDescription && (
+         {!result.errorMessage && (!result.trailImageUri || result.trailImageUri.startsWith('https://placehold.co')) && result.trailDescription && (
              <div className="p-3 bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded-md flex items-center gap-2 text-sm">
                 <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                <p>Análise de rastro textual concluída. A imagem do rastro não pôde ser gerada.</p>
+                <p>Análise de rastro textual concluída. A imagem do rastro não pôde ser gerada ou é um placeholder.</p>
             </div>
         )}
 

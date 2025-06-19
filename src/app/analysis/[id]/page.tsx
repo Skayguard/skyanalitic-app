@@ -40,7 +40,7 @@ export default function AnalysisDetailsPage() {
         const decodedId = decodeURIComponent(rawId);
         setPageEventId(decodedId);
       } catch (e) {
-        console.error("Error decoding event ID from URL:", e, "Raw ID:", rawId);
+        console.error("Erro ao decodificar ID do evento da URL:", e, "ID Bruto:", rawId);
         setPageEventId(rawId); 
       }
     } else {
@@ -61,10 +61,9 @@ export default function AnalysisDetailsPage() {
 
     if (analyzedEvents && analyzedEvents.length > 0) {
       const foundEvent = analyzedEvents.find(e => e.id === pageEventId);
-      console.log('[AnalysisDetailsPage] Found event in context:', foundEvent); // Added log
+      console.log('[AnalysisDetailsPage] Evento encontrado no contexto:', foundEvent); 
       setEvent(foundEvent || null);
     } else {
-      // If context is loaded but analyzedEvents is empty, and we have a pageEventId, it's not found.
       if(!isLoadingContext) setEvent(null);
     }
   }, [pageEventId, analyzedEvents, isLoadingContext]);
@@ -87,7 +86,7 @@ export default function AnalysisDetailsPage() {
           O relatório de análise que você está procurando não existe ou não pôde ser carregado. (ID: {pageEventId || 'N/A'})
         </p>
         <Button asChild variant="outline">
-          <Link href="/">
+          <Link href="/upload"> {/* Alterado para /upload como painel principal */}
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Link>
         </Button>
@@ -126,7 +125,7 @@ export default function AnalysisDetailsPage() {
                     {getReportTitle()}
                 </CardTitle>
              </CardHeader>
-            <CardContent className="p-4 pt-0"> {/* Adjusted padding */}
+            <CardContent className="p-4 pt-0">
               <h2 className="text-md font-semibold mb-2 text-foreground">{event.mediaName}</h2>
               <p className="text-xs text-muted-foreground mb-3">
                 Capturado em: {event.timestamp ? new Date(event.timestamp).toLocaleString('pt-BR') : 'Data indisponível'}

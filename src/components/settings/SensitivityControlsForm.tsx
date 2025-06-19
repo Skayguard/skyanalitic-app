@@ -113,7 +113,7 @@ export function SensitivityControlsForm() {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <Label htmlFor="min-brightness" className="text-base font-medium">Brilho Mínimo para Considerar Pixel</Label>
+              <Label htmlFor="min-brightness" className="text-base font-medium">Brilho Mínimo do Pixel</Label>
               <span className="text-sm font-semibold text-accent">{localSettings.minBrightness}%</span>
             </div>
             <Slider

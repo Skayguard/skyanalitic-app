@@ -21,8 +21,8 @@ interface BoundingBox {
 
 export function CameraFeed() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null); // Para captura de frame e análise de movimento
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null); // Para desenhar o bounding box
+  const canvasRef = useRef<HTMLCanvasElement>(null); 
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null); 
   
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +66,7 @@ export function CameraFeed() {
       videoRef.current.srcObject = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = null; // Clear previous onstop handler
+      mediaRecorderRef.current.onstop = null; 
       mediaRecorderRef.current.stop();
     }
     recordedChunksRef.current = [];
@@ -80,7 +80,7 @@ export function CameraFeed() {
     }
     setIsAutoDetectingActive(false);
     lastFrameDataRef.current = null;
-    setBoundingBox(null); // Limpa o retângulo ao parar a detecção
+    setBoundingBox(null); 
   }, []);
   
   const initializeCamera = useCallback(async () => {
@@ -125,7 +125,7 @@ export function CameraFeed() {
         videoRef.current.onloadedmetadata = () => {
             setIsCameraActive(true);
             setError(null); 
-            if (overlayCanvasRef.current && videoRef.current) { // Dimensiona o overlay canvas
+            if (overlayCanvasRef.current && videoRef.current) { 
                 overlayCanvasRef.current.width = videoRef.current.videoWidth;
                 overlayCanvasRef.current.height = videoRef.current.videoHeight;
             }
@@ -171,7 +171,7 @@ export function CameraFeed() {
       stopCurrentStreamAndRecorder();
       stopAutoDetectionLogic();
     };
-  }, [initializeCamera]); // initializeCamera já tem currentFacingMode como dependência.
+  }, [initializeCamera]); 
 
   const handleSwitchCamera = () => {
     if (videoDeviceCount < 2 && !isSwitchingCamera) { 
@@ -186,7 +186,7 @@ export function CameraFeed() {
     return new Promise<void>((resolve, reject) => {
       const onSeekedOrLoaded = () => {
         videoElement.removeEventListener('seeked', onSeekedOrLoaded);
-        videoElement.removeEventListener('loadeddata', onSeekedOrLoaded); // Handle cases where video might not be seekable immediately
+        videoElement.removeEventListener('loadeddata', onSeekedOrLoaded); 
 
         const context = canvasElement.getContext('2d');
         if (context) {
@@ -201,52 +201,46 @@ export function CameraFeed() {
       };
 
       videoElement.addEventListener('seeked', onSeekedOrLoaded);
-      videoElement.addEventListener('loadeddata', onSeekedOrLoaded); // Added for robustness
+      videoElement.addEventListener('loadeddata', onSeekedOrLoaded);
 
-      if (videoElement.readyState >= videoElement.HAVE_METADATA) { // HAVE_METADATA (1) or higher
+      if (videoElement.readyState >= videoElement.HAVE_METADATA) { 
         videoElement.currentTime = time;
-        if (videoElement.currentTime === time) { // Check if currentTime was set successfully
-             // For some browsers/videos, 'seeked' might not fire if currentTime is already set.
-             // Trigger manually if readyState is high enough.
-            if(videoElement.readyState >= videoElement.HAVE_CURRENT_DATA) { // HAVE_CURRENT_DATA (2) or higher
+        if (videoElement.currentTime === time) { 
+            if(videoElement.readyState >= videoElement.HAVE_CURRENT_DATA) { 
                 onSeekedOrLoaded();
             }
         }
-      } else { 
-        // If metadata not loaded yet, onloadeddata will trigger the process.
-        // currentTime setting might be ignored or error if set too early.
-      }
+      } 
       videoElement.onerror = () => reject(new Error("Erro no elemento de vídeo durante extração de frame."));
     });
   };
 
   const generateAndDownloadArtifacts = async (videoBlob: Blob, analysisData: AnalyzeUapMediaOutput, baseFileName: string, originalCaptureTimestamp: string, eventId: string) => {
-    if (!canvasRef.current) { // Use o canvas de análise (não o de overlay) para artefatos
+    if (!canvasRef.current) { 
       toast({ title: "Erro nos Artefatos", description: "Referência do canvas de análise não encontrada.", variant: "destructive" });
       return;
     }
     const canvasForArtifacts = canvasRef.current;
     const tempVideoEl = document.createElement('video');
-    tempVideoEl.crossOrigin = "anonymous"; // Important for tainted canvas if source is different
+    tempVideoEl.crossOrigin = "anonymous"; 
     tempVideoEl.src = URL.createObjectURL(videoBlob);
-    tempVideoEl.muted = true; tempVideoEl.preload = 'metadata'; // Changed to metadata
+    tempVideoEl.muted = true; tempVideoEl.preload = 'metadata';
 
     await new Promise<void>((resolve, reject) => {
         tempVideoEl.onloadedmetadata = () => {
-            // Attempt to play and pause to ensure it's 'seekable' on some browsers.
             tempVideoEl.play().then(() => {
                 tempVideoEl.pause();
                 resolve();
             }).catch(e => {
-                console.warn("Play-pause for seekability failed (ignorable on some systems):", e);
-                resolve(); // Resolve anyway, currentTime might still work
+                console.warn("Play-pause para 'seekability' falhou (ignorável em alguns sistemas):", e);
+                resolve(); 
             });
         };
         tempVideoEl.onerror = (e) => {
-            console.error("Error loading temp video for artifacts:", e, tempVideoEl.error);
+            console.error("Erro ao carregar vídeo temporário para artefatos:", e, tempVideoEl.error);
             reject(new Error(`Falha ao carregar vídeo gravado para artefatos. Código: ${tempVideoEl.error?.code}`));
         };
-        tempVideoEl.load(); // Explicitly load
+        tempVideoEl.load(); 
     });
     
     try {
@@ -255,7 +249,7 @@ export function CameraFeed() {
     } catch (e) {
       toast({ title: "Erro Extração Foto", description: (e as Error).message, variant: "destructive" });
     } finally { URL.revokeObjectURL(tempVideoEl.src); }
-    const technicalData = `Skyanalytic - Relatório Técnico\nID: ${eventId}\nMídia: ${baseFileName}\nTimestamp: ${new Date(originalCaptureTimestamp).toLocaleString('pt-BR', { timeZone: 'UTC' })} UTC\nResolução: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}\nNavegador: ${navigator.userAgent}\nCâmera: ${currentFacingMode}\n\nConf App:\n  AutoDetecção: ${settings.enableAutoMotionDetection}\n  Sensibilidade: ${settings.motionSensitivity}%\n  Brilho Mín.: ${settings.minBrightness}%\n  Tam. Obj. Mín.: ${settings.minObjectSize}\n\nAnálise IA:\n  Prob UAP: ${(analysisData.probabilityOfGenuineUapEvent * 100).toFixed(1)}%\n  Anomalia: ${analysisData.anomalyGrade}\n  Resumo: ${analysisData.summary}\n  Detalhes IA: ${analysisData.technicalDetails}\n  DB Comp: ${analysisData.databaseComparisons}`;
+    const technicalData = `SkyAnalytics - Relatório Técnico\nID: ${eventId}\nMídia: ${baseFileName}\nTimestamp: ${new Date(originalCaptureTimestamp).toLocaleString('pt-BR', { timeZone: 'UTC' })} UTC\nResolução: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}\nNavegador: ${navigator.userAgent}\nCâmera: ${currentFacingMode}\n\nConf App:\n  AutoDetecção: ${settings.enableAutoMotionDetection}\n  Sensibilidade: ${settings.motionSensitivity}%\n  Brilho Mín.: ${settings.minBrightness}%\n  Tam. Obj. Mín.: ${settings.minObjectSize}\n\nAnálise IA:\n  Prob UAP: ${(analysisData.probabilityOfGenuineUapEvent * 100).toFixed(1)}%\n  Anomalia: ${analysisData.anomalyGrade}\n  Resumo: ${analysisData.summary}\n  Detalhes IA: ${analysisData.technicalDetails}\n  DB Comp: ${analysisData.databaseComparisons}`;
     const txtBlob = new Blob([technicalData.trim()], { type: 'text/plain' });
     triggerDownload(txtBlob, `${baseFileName}_dados.txt`);
     toast({ title: "Dados Técnicos Gerados", description: "Arquivo TXT baixado.", duration: 3000 });
@@ -270,7 +264,7 @@ export function CameraFeed() {
     }
 
     setIsProcessingCapture(true);
-    setBoundingBox(null); // Limpa o retângulo durante a captura
+    setBoundingBox(null); 
     const video = videoRef.current; const analysisCanvas = canvasRef.current;
     analysisCanvas.width = video.videoWidth; analysisCanvas.height = video.videoHeight;
     const context = analysisCanvas.getContext('2d');
@@ -282,7 +276,7 @@ export function CameraFeed() {
     const initialFrameDataUri = analysisCanvas.toDataURL('image/jpeg');
     const captureTimestamp = new Date().toISOString();
     const eventId = captureTimestamp + Math.random().toString(36).substring(2, 9);
-    const mediaName = `Captura_Skyanalytic_${new Date(captureTimestamp).toLocaleString('pt-BR').replace(/[\/\:]/g, '-').replace(/\s/g, '_')}`;
+    const mediaName = `Captura_SkyAnalytics_${new Date(captureTimestamp).toLocaleString('pt-BR').replace(/[\/\:]/g, '-').replace(/\s/g, '_')}`;
 
     recordedChunksRef.current = [];
     mediaRecorderRef.current.start();
@@ -325,20 +319,20 @@ export function CameraFeed() {
       toast({ title: "Falha Análise IA", description: err instanceof Error ? err.message : "Erro desconhecido.", variant: "destructive" });
       setIsProcessingCapture(false); 
     }
-  }, [isCameraActive, isProcessingCapture, mediaRecorderRef, canvasRef, videoRef, toast, addAnalyzedEvent, settings.enableAutoMotionDetection]);
+  }, [isCameraActive, isProcessingCapture, mediaRecorderRef, canvasRef, videoRef, toast, addAnalyzedEvent, settings.enableAutoMotionDetection, settings.motionSensitivity, settings.minBrightness, settings.minObjectSize, currentFacingMode]);
 
   const processFrameForMotion = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !isCameraActive || isProcessingCapture || captureCooldownRef.current || isLoadingSettings || !settings.enableAutoMotionDetection) {
-      if (!settings.enableAutoMotionDetection) setBoundingBox(null); // Limpa se desabilitado
+      if (!settings.enableAutoMotionDetection) setBoundingBox(null); 
       return;
     }
 
     const video = videoRef.current;
-    const detectionCanvas = canvasRef.current; // Canvas para análise de movimento
+    const detectionCanvas = canvasRef.current; 
     const detectionCtx = detectionCanvas.getContext('2d', { willReadFrequently: true });
     if (!detectionCtx) return;
 
-    const scaleFactor = 4; // Processar em 1/4 da resolução
+    const scaleFactor = 4; 
     detectionCanvas.width = video.videoWidth / scaleFactor;
     detectionCanvas.height = video.videoHeight / scaleFactor;
     detectionCtx.drawImage(video, 0, 0, detectionCanvas.width, detectionCanvas.height);
@@ -351,11 +345,9 @@ export function CameraFeed() {
     if (lastFrameDataRef.current) {
       const data = currentFrame.data;
       const lastData = lastFrameDataRef.current.data;
-      // Sensibilidade: menor valor = mais sensível. Ajuste de 50 para um intervalo mais utilizável (ex: 10-100)
-      // (100 - 90 sens) / 100 * 50 = 0.1 * 50 = 5. (100 - 10 sens) / 100 * 50 = 0.9 * 50 = 45
-      const sensitivityThreshold = (100 - settings.motionSensitivity) / 100 * 70 + 5; // Mapeia 0-100 para ~5-75
+      const sensitivityThreshold = (100 - settings.motionSensitivity) / 100 * 70 + 5; 
       const brightnessThreshold = settings.minBrightness / 100 * 255;
-      const pixelStep = 4; // Analisar a cada N pixels para performance
+      const pixelStep = 4; 
 
       for (let y = 0; y < detectionCanvas.height; y += pixelStep) {
         for (let x = 0; x < detectionCanvas.width; x += pixelStep) {
@@ -377,13 +369,10 @@ export function CameraFeed() {
           }
         }
       }
-      // minObjectSize é um valor de 1 a 100. Mapeamos para uma contagem de pixels.
-      // Ex: minObjectSize 10 => 10 * (largura_canvas_detecao / 100) = precisa de ~10% de pixels "largos"
       const minChangedPixelsToTrigger = Math.max(5, settings.minObjectSize * (detectionCanvas.width / 250)); 
       
       if (changedPixels > minChangedPixelsToTrigger && maxX > minX) {
         console.log(`Movimento detectado! Pixels alterados: ${changedPixels}`);
-        // Escalar o bounding box para as dimensões do vídeo original
         const finalX = minX * scaleFactor;
         const finalY = minY * scaleFactor;
         const finalWidth = (maxX - minX) * scaleFactor;
@@ -393,7 +382,6 @@ export function CameraFeed() {
         lastBoundingBoxTimeRef.current = Date.now();
         handleCaptureAndAnalyze('auto');
       } else {
-        // Se nenhum movimento for detectado por ~1 segundo, limpa o bounding box
         if (Date.now() - lastBoundingBoxTimeRef.current > 1000) {
           setBoundingBox(null);
         }
@@ -402,9 +390,8 @@ export function CameraFeed() {
     lastFrameDataRef.current = currentFrame;
   }, [isCameraActive, isProcessingCapture, isLoadingSettings, settings, handleCaptureAndAnalyze]);
 
-  useEffect(() => { // Efeito para desenhar o bounding box no overlayCanvas
+  useEffect(() => { 
     if (!overlayCanvasRef.current || !videoRef.current || !isCameraActive) {
-        // Garante que o canvas de overlay seja limpo se a câmera ficar inativa
         const overlayCtx = overlayCanvasRef.current?.getContext('2d');
         overlayCtx?.clearRect(0, 0, overlayCanvasRef.current?.width || 0, overlayCanvasRef.current?.height || 0);
         return;
@@ -413,7 +400,6 @@ export function CameraFeed() {
     const overlayCtx = overlayCanvasRef.current.getContext('2d');
     if (!overlayCtx) return;
 
-    // Garante que o overlayCanvas tenha as dimensões corretas do vídeo
     if (overlayCanvasRef.current.width !== videoRef.current.videoWidth || overlayCanvasRef.current.height !== videoRef.current.videoHeight) {
         overlayCanvasRef.current.width = videoRef.current.videoWidth;
         overlayCanvasRef.current.height = videoRef.current.videoHeight;
@@ -422,7 +408,7 @@ export function CameraFeed() {
     overlayCtx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
 
     if (boundingBox) {
-      overlayCtx.strokeStyle = 'hsl(var(--primary))'; // Usa a cor primária do tema
+      overlayCtx.strokeStyle = 'hsl(var(--primary))'; 
       overlayCtx.lineWidth = 3;
       overlayCtx.strokeRect(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
     }
@@ -438,8 +424,6 @@ export function CameraFeed() {
 
     setIsAutoDetectingActive(true);
     lastFrameDataRef.current = null; 
-    // Intervalo de análise de frames. Ajuste para performance vs responsividade.
-    // 500ms = 2 FPS para detecção.
     autoDetectionIntervalRef.current = setInterval(processFrameForMotion, 500); 
     console.log("Detecção automática de movimento iniciada.");
 
@@ -506,7 +490,7 @@ export function CameraFeed() {
             </div>
           )}
         </div>
-        <canvas ref={canvasRef} style={{ display: 'none' }} /> {/* Canvas para análise, escondido */}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button
@@ -534,7 +518,7 @@ export function CameraFeed() {
                     {isSwitchingCamera ? <Loader2 className="h-5 w-5 animate-spin" /> : <SwitchCamera className="h-5 w-5" />}
                     <span className="ml-2 hidden sm:inline">Alternar Câmera</span>
                  </Button>
-            ) : <div /> /* Placeholder para manter o layout de duas colunas */}
+            ) : <div /> }
         </div>
         
         {isProcessingCapture && (
@@ -558,12 +542,10 @@ export function CameraFeed() {
         )}
          {!isLoadingSettings && !settings.enableAutoMotionDetection && (
             <p className="mt-3 text-xs text-center text-muted-foreground">
-                Para ativar a detecção automática de movimento, vá para <a href="/settings" className="underline hover:text-primary">Configurações</a>.
+                Para ativar a detecção automática de movimento, vá para <Link href="/settings" className="underline hover:text-primary">Configurações</Link>.
             </p>
         )}
       </CardContent>
     </Card>
   );
 }
-
-    
