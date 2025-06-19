@@ -13,13 +13,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { UserPlus, Loader2 } from 'lucide-react';
+import SkyAnalyticsLogo from '@/components/layout/SkyAnalyticsLogo';
 
 const registerSchema = z.object({
-  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
-  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
-  message: 'As senhas não coincidem.',
+  message: 'Passwords do not match.',
   path: ['confirmPassword'],
 });
 
@@ -39,14 +40,10 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (user) {
-      router.push('/'); // Redireciona se já estiver logado
+      router.push('/upload'); // Redirect to an app page if already logged in
     }
   }, [user, router]);
   
-  const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
-    await signUp(data.email, data.password);
-  };
-
   if (authLoading && !user) { 
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -55,49 +52,60 @@ export default function RegisterPage() {
     );
   }
 
+  if (user && !authLoading) {
+     return (
+       <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
+      <Link href="/" className="flex items-center gap-2 mb-8" aria-label="SkyAnalytics Home">
+        <SkyAnalyticsLogo className="h-8 w-8 text-primary" />
+        <span className="text-2xl font-bold text-foreground">SkyAnalytics</span>
+      </Link>
+      <Card className="w-full max-w-md shadow-xl border">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-            <UserPlus className="h-7 w-7 text-primary" />
-            Criar Conta Skyanalytic
+          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2 text-foreground">
+            <UserPlus className="h-6 w-6 text-primary" />
+            Create Your Account
           </CardTitle>
-          <CardDescription>Registre-se para começar a analisar UAPs.</CardDescription>
+          <CardDescription>Join SkyAnalytics to unlock powerful data insights.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
-                placeholder="seu@email.com"
-                className={errors.email ? 'border-destructive' : ''}
+                placeholder="you@example.com"
+                className={errors.email ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 {...register('password')}
-                placeholder="Crie uma senha (mín. 6 caracteres)"
-                className={errors.password ? 'border-destructive' : ''}
+                placeholder="Create a password (min. 6 characters)"
+                className={errors.password ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirme a Senha</Label>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 {...register('confirmPassword')}
-                placeholder="Repita a senha"
-                className={errors.confirmPassword ? 'border-destructive' : ''}
+                placeholder="Repeat your password"
+                className={errors.confirmPassword ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
             </div>
@@ -107,13 +115,13 @@ export default function RegisterPage() {
               ) : (
                 <UserPlus className="mr-2 h-4 w-4" />
               )}
-              Registrar
+              Sign Up
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Já tem uma conta?{' '}
+            Already have an account?{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Faça login aqui
+              Sign in here
             </Link>
           </p>
         </CardContent>

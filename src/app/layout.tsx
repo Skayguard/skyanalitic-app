@@ -5,11 +5,11 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyzedEventsProvider } from '@/contexts/AnalyzedEventsContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
-import { AuthProvider } from '@/contexts/AuthContext'; // Importar AuthProvider
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'Skyanalytic',
-  description: 'Analise avistamentos de UAP com IA',
+  title: 'SkyAnalytics - Advanced Data Insights',
+  description: 'Unlock the power of your data with SkyAnalytics. Advanced insights and analytics solutions for businesses and tech professionals.',
 };
 
 export default function RootLayout({
@@ -22,12 +22,12 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <AuthProvider> {/* Envolver com AuthProvider */}
+        <AuthProvider>
           <SettingsProvider>
-            <AnalyzedEventsProvider>
+            <AnalyzedEventsProvider> {/* Kept for existing app structure, SkyAnalytics might need its own context later */}
               <AppLayout>{children}</AppLayout>
               <Toaster />
             </AnalyzedEventsProvider>
@@ -37,4 +37,3 @@ export default function RootLayout({
     </html>
   );
 }
-
