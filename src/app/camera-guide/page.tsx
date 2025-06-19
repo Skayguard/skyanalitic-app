@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ExternalLink, Camera as CameraIcon, ListChecks, Zap, CheckCircle2 } from 'lucide-react';
+import { ExternalLink, Camera as CameraIcon, ListChecks, Zap } from 'lucide-react';
 
 export default function CameraGuidePage() {
-  const cameraImageUrl = "https://placehold.co/600x400.png"; // Placeholder
+  const cameraImageUrl = "https://placehold.co/300x200.png"; // URL consistente com width/height abaixo
   const aliexpressUrl = "https://pt.aliexpress.com/item/1005007211573450.html?spm=a2g0o.home.pcJustForYou.8.71991c915x0lm3&gps-id=pcJustForYou&scm=1007.13562.416251.0&scm_id=1007.13562.416251.0&scm-url=1007.13562.416251.0&pvid=530f2ea9-c038-4527-8dad-ba2a664029f2&_t=gps-id:pcJustForYou,scm-url:1007.13562.416251.0,pvid:530f2ea9-c038-4527-8dad-ba2a664029f2,tpp_buckets:668%232846%238115%232000&pdp_ext_f=%7B%22order%22%3A%2287%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%223562%22%7D&pdp_npi=4%40dis%21BRL%21103.15%2194.99%21%21%2117.88%2116.46%21%402101c71a17503455516427397ee15f%2112000039823777188%21rec%21BR%211883207220%21X&utparam-url=scene%3ApcJustForYou%7Cquery_from%3A";
 
   const communityLinks = [
@@ -60,7 +60,7 @@ export default function CameraGuidePage() {
                 <Image
                     src={cameraImageUrl}
                     alt="Câmera USB recomendada"
-                    width={300}
+                    width={300} 
                     height={200}
                     className="rounded-md object-cover border border-border"
                     data-ai-hint="usb camera industrial"
