@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, ChangeEvent, useRef } from 'react';
+import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,7 @@ import { AnalysisType } from '@/lib/types';
 
 export function TrailAnalysisForm() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null); // This will be an object URL for local preview
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeObjectTrailOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +25,12 @@ export function TrailAnalysisForm() {
 
   const resetFormState = () => {
     setVideoFile(null);
+    if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl); // Clean up existing object URL
     setVideoPreviewUrl(null);
     setAnalysisResult(null);
     setError(null);
     if (videoPlayerRef.current) {
-      videoPlayerRef.current.src = '';
+      videoPlayerRef.current.src = ''; // Clear video player source
     }
   };
 
@@ -38,27 +39,27 @@ export function TrailAnalysisForm() {
     const selectedFile = event.target.files?.[0];
 
     if (selectedFile) {
-      if (selectedFile.size > 50 * 1024 * 1024) { 
-        toast({ title: "Arquivo de vídeo muito grande", description: "Por favor, selecione um vídeo menor que 50MB.", variant: "destructive" });
+      if (selectedFile.size > 50 * 1024 * 1024) { // 50MB limit for trail analysis videos
+        toast({ title: "Video file too large", description: "Please select a video smaller than 50MB.", variant: "destructive" });
         return;
       }
       if (!selectedFile.type.startsWith('video/')) {
-        toast({ title: "Tipo de arquivo não suportado", description: "Por favor, selecione um arquivo de vídeo (MP4, MOV, WebM, etc.).", variant: "destructive" });
+        toast({ title: "Unsupported file type", description: "Please select a video file (MP4, MOV, WebM, etc.).", variant: "destructive" });
         return;
       }
       
       setVideoFile(selectedFile);
       const objectURL = URL.createObjectURL(selectedFile);
-      setVideoPreviewUrl(objectURL); 
+      setVideoPreviewUrl(objectURL); // Use object URL for preview
       
-      toast({ title: "Vídeo Carregado", description: "Pronto para análise de rastro."});
+      toast({ title: "Video Loaded", description: "Ready for trail analysis."});
     }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!videoFile || !videoPreviewUrl) {
-      toast({ title: "Nenhum vídeo selecionado", description: "Por favor, selecione um arquivo de vídeo para analisar.", variant: "destructive" });
+      toast({ title: "No video selected", description: "Please select a video file to analyze.", variant: "destructive" });
       return;
     }
 
@@ -66,7 +67,7 @@ export function TrailAnalysisForm() {
     setAnalysisResult(null);
     setError(null);
 
-    // Para enviar o vídeo para a IA, precisamos dele como Data URI
+    // Convert video file to Data URI for Genkit flow
     const reader = new FileReader();
     reader.readAsDataURL(videoFile);
     reader.onloadend = async () => {
@@ -76,43 +77,46 @@ export function TrailAnalysisForm() {
           setAnalysisResult(result);
           
           const newEventId = new Date().toISOString() + Math.random().toString(36).substring(2, 9);
+          // For thumbnail, use the generated trail image if available, otherwise a placeholder
+          // The trailImageUri itself from the result might be a data URI or a storage URL later
+          // For now, if AI generates it, it's a data URI.
           await addAnalyzedEvent({
             id: newEventId,
             timestamp: new Date().toISOString(),
-            thumbnailUrl: result.trailImageUri || `https://placehold.co/300x200.png?text=Rastro`,
+            thumbnailUrl: result.trailImageUri || `https://placehold.co/300x200.png/2c2f33/E0E7FF?text=Trail`, // Placeholder if no image
             mediaName: videoFile.name,
             analysisType: AnalysisType.TRAIL,
             analysis: result,
           });
           
-          if (result.errorMessage && !result.trailImageUri) { 
+          if (result.errorMessage && !result.trailImageUri) { // Error and no image
              toast({
-                title: "Aviso da Análise de Rastro",
+                title: "Trail Analysis Warning",
                 description: result.errorMessage,
-                variant: "default", 
+                variant: "default", // Use default for warnings that aren't critical failures
                 duration: 7000,
               });
-          } else if (result.errorMessage && result.trailImageUri) { 
+          } else if (result.errorMessage && result.trailImageUri) { // Image generated but also a message
              toast({
-                title: "Análise de Rastro Concluída com Observações",
-                description: result.errorMessage, 
+                title: "Trail Analysis Completed with Notes",
+                description: result.errorMessage, // Show the model's note
                 variant: "default",
                 duration: 7000,
               });
           }
           else {
             toast({
-                title: "Análise de Rastro Concluída",
-                description: "O relatório da análise de rastro está pronto e salvo.",
+                title: "Trail Analysis Complete",
+                description: "Trail analysis report is ready and saved.",
               });
           }
 
         } catch (err) {
-          console.error("Falha na análise de rastro IA:", err);
-          const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido durante a análise de rastro.";
+          console.error("AI trail analysis failed:", err);
+          const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during trail analysis.";
           setError(errorMessage);
           toast({
-            title: "Falha na Análise de Rastro",
+            title: "Trail Analysis Failed",
             description: errorMessage,
             variant: "destructive",
           });
@@ -121,13 +125,13 @@ export function TrailAnalysisForm() {
         }
     };
     reader.onerror = () => {
-        setError("Falha ao ler o arquivo de vídeo para enviar à IA.");
-        toast({ title: "Erro de Leitura", description: "Não foi possível processar o vídeo para análise.", variant: "destructive" });
+        setError("Failed to read video file for AI submission.");
+        toast({ title: "Read Error", description: "Could not process video for analysis.", variant: "destructive" });
         setIsAnalyzing(false);
     };
   };
 
-  // Revoga a URL do objeto quando o componente é desmontado ou videoPreviewUrl muda
+  // Cleanup object URL when component unmounts or videoPreviewUrl changes
   useEffect(() => {
     return () => {
       if (videoPreviewUrl && videoPreviewUrl.startsWith('blob:')) {
@@ -137,38 +141,38 @@ export function TrailAnalysisForm() {
   }, [videoPreviewUrl]);
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-xl">
+    <Card className="w-full max-w-2xl mx-auto shadow-xl border-border">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-card-foreground">
           <GitCommitHorizontal className="h-6 w-6 text-primary" />
-          Enviar Vídeo para Análise de Rastro
+          Upload Video for Trail Analysis
         </CardTitle>
         <CardDescription>
-          Envie um arquivo de vídeo (máx. 50MB). A IA analisará o movimento e tentará gerar uma imagem do rastro do objeto.
-          Este processo pode levar algum tempo. Os resultados serão salvos no seu painel.
+          Submit a video file (max 50MB). The AI will analyze movement and attempt to generate an image of the object's trail. 
+          This process can take some time. Results will be saved to your dashboard.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="video-upload" className="text-sm font-medium text-foreground">
-              Escolher Arquivo de Vídeo
+              Choose Video File
             </Label>
             <Input
               id="video-upload"
               type="file"
-              accept="video/*"
+              accept="video/*" // General video accept
               onChange={handleFileChange}
               className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               aria-describedby="video-upload-help"
               disabled={isAnalyzing}
             />
-            <p id="video-upload-help" className="mt-1 text-xs text-muted-foreground">Formatos suportados: MP4, MOV, WebM, etc. Máx 50MB.</p>
+            <p id="video-upload-help" className="mt-1 text-xs text-muted-foreground">Supported formats: MP4, MOV, WebM, etc. Max 50MB.</p>
           </div>
 
           {videoPreviewUrl && videoFile && (
             <div className="mt-4 p-4 border border-border rounded-md bg-muted/30 min-h-[200px] flex flex-col justify-center items-center">
-              <h4 className="text-sm font-medium text-foreground mb-2 self-start">Pré-visualização do Vídeo:</h4>
+              <h4 className="text-sm font-medium text-foreground mb-2 self-start">Video Preview:</h4>
               <video 
                 ref={videoPlayerRef}
                 src={videoPreviewUrl} 
@@ -176,7 +180,7 @@ export function TrailAnalysisForm() {
                 className="max-h-80 w-auto rounded-md border border-border"
                 data-ai-hint="video preview"
               >
-                Seu navegador não suporta a tag de vídeo.
+                Your browser does not support the video tag.
               </video>
               <p className="text-xs text-muted-foreground mt-2">{videoFile.name}</p>
             </div>
@@ -188,7 +192,7 @@ export function TrailAnalysisForm() {
             ) : (
               <UploadCloud className="mr-2 h-4 w-4" />
             )}
-            {isAnalyzing ? 'Analisando Rastro...' : 'Enviar & Analisar Rastro'}
+            {isAnalyzing ? 'Analyzing Trail...' : 'Upload & Analyze Trail'}
           </Button>
         </form>
 
@@ -196,15 +200,15 @@ export function TrailAnalysisForm() {
           <div className="mt-6 p-4 bg-destructive/10 border border-destructive text-destructive rounded-md flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold">Erro na Análise</h4>
+              <h4 className="font-semibold">Analysis Error</h4>
               <p className="text-sm">{error}</p>
             </div>
           </div>
         )}
 
-        {analysisResult && (
+        {analysisResult && ( // Display report if analysis is done
           <div className="mt-8">
-            <TrailAnalysisReport result={analysisResult} videoName={videoFile?.name || "Vídeo Enviado"} />
+            <TrailAnalysisReport result={analysisResult} videoName={videoFile?.name || "Uploaded Video"} />
           </div>
         )}
       </CardContent>

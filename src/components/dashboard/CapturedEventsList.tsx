@@ -21,60 +21,66 @@ export function CapturedEventsList() {
   const renderEventItem = (event: AnalyzedEvent) => {
     let title = event.mediaName;
     let description = '';
-    let IconComponent = Search; 
+    let IconComponent = Search; // Default for UAP
     let probabilityText = '';
     let probabilityHigh = false;
 
     if (event.analysisType === AnalysisType.UAP) {
       const uapAnalysis = event.analysis as AnalyzeUapMediaOutput;
+      // Ensure summary exists before trying to access its properties or methods
       description = uapAnalysis.summary?.substring(0, 70) + (uapAnalysis.summary?.length > 70 ? '...' : '');
       const prob = uapAnalysis.probabilityOfGenuineUapEvent * 100;
-      probabilityText = `Prob. UAP: ${prob.toFixed(0)}%`;
+      probabilityText = `UAP Prob: ${prob.toFixed(0)}%`;
       probabilityHigh = prob > 50;
     } else if (event.analysisType === AnalysisType.TRAIL) {
       const trailAnalysis = event.analysis as AnalyzeObjectTrailOutput;
-      title = `Rastro: ${event.mediaName}`;
+      title = `Trail: ${event.mediaName}`;
       description = trailAnalysis.trailDescription?.substring(0, 70) + (trailAnalysis.trailDescription?.length > 70 ? '...' : '');
       IconComponent = GitCommitHorizontal;
       if (trailAnalysis.trailImageUri && !trailAnalysis.trailImageUri.startsWith('https://placehold.co')) {
-        probabilityText = 'Imagem de rastro gerada';
+        probabilityText = 'Trail image generated';
       } else if (trailAnalysis.errorMessage && !trailAnalysis.trailImageUri) {
-        probabilityText = 'Rastro descrito (sem imagem)';
+        // If error message exists and no image, consider it "high" importance for user to check
+        probabilityText = 'Trail described (no image)';
         probabilityHigh = true; 
       } else {
-        probabilityText = 'Rastro descrito';
+        probabilityText = 'Trail described';
       }
     }
 
     return (
       <li key={event.id}>
         <Link href={`/analysis/${encodeURIComponent(event.id)}`} legacyBehavior passHref>
+          {/* Use <a> tag for legacyBehavior to work correctly with custom styled components or direct styling */}
           <a className="block p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background">
             <div className="flex items-center space-x-2">
               <Image
-                src={event.thumbnailUrl || `https://placehold.co/48x48.png?text=SkyA`}
-                alt={`Miniatura para ${event.mediaName}`}
+                // Provide a default placeholder if thumbnailUrl is missing
+                src={event.thumbnailUrl || `https://placehold.co/48x48.png/2c2f33/E0E7FF?text=SkyA`}
+                alt={`Thumbnail for ${event.mediaName}`}
                 width={48}
                 height={48}
                 className="rounded-md object-cover aspect-square border border-border flex-shrink-0"
                 data-ai-hint={event.analysisType === AnalysisType.TRAIL ? "motion trail" : "night sky"}
               />
-              <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="flex-1 min-w-0 overflow-hidden"> {/* Ensures text truncation works */}
                 <h3 className="text-xs sm:text-sm font-semibold truncate text-foreground flex items-center">
                   <IconComponent className="h-4 w-4 mr-1.5 text-primary flex-shrink-0" />
                   {title}
                 </h3>
                 <p className="text-xs text-muted-foreground truncate">
-                  {event.timestamp ? new Date(event.timestamp).toLocaleDateString('pt-BR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Data inválida'}
+                  {/* Ensure timestamp is valid before formatting */}
+                  {event.timestamp ? new Date(event.timestamp).toLocaleDateString('en-US', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Invalid date'}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">{description || 'Descrição não disponível'}</p>
+                <p className="text-xs text-muted-foreground truncate">{description || 'No description available'}</p>
                 {probabilityText && (
                   <p className={cn(
                       "text-xs font-medium mt-0.5 truncate",
-                      probabilityHigh ? 'text-destructive' : 'text-green-400'
+                      probabilityHigh ? 'text-destructive' : 'text-green-400' // Use green for non-high probability
                     )}
                   >
                     {probabilityText}
+                    {/* Add icon based on probability */}
                     {probabilityHigh ?
                       <AlertTriangle className="inline ml-1 h-3 w-3" /> :
                       <CheckCircle2 className="inline ml-1 h-3 w-3" />
@@ -82,7 +88,7 @@ export function CapturedEventsList() {
                   </p>
                 )}
               </div>
-              <Eye className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-1" />
+              <Eye className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-1" /> {/* Ensure it doesn't push content */}
             </div>
           </a>
         </Link>
@@ -93,11 +99,11 @@ export function CapturedEventsList() {
 
   if (isLoading) {
     return (
-      <Card className="shadow-xl">
+      <Card className="shadow-xl border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-card-foreground">
             <ListChecks className="h-6 w-6 text-primary" />
-            Registro de Eventos Capturados
+            Captured Events Log
           </CardTitle>
           <Skeleton className="h-4 w-3/4" />
         </CardHeader>
@@ -119,20 +125,20 @@ export function CapturedEventsList() {
   }
 
   return (
-    <Card className="shadow-xl">
+    <Card className="shadow-xl border-border">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-card-foreground">
             <ListChecks className="h-6 w-6 text-primary" />
-            Registro de Eventos Capturados
+            Captured Events Log
           </CardTitle>
           <CardDescription>
-            Revise análises passadas. Clique em um evento para ver detalhes.
+            Review past analyses. Click an event to see details.
           </CardDescription>
         </div>
         {analyzedEvents.length > 0 && (
-           <Button variant="destructive" size="sm" onClick={clearAllEvents} aria-label="Limpar todos os eventos">
-            <Trash2 className="mr-2 h-4 w-4" /> Limpar Tudo
+           <Button variant="destructive" size="sm" onClick={clearAllEvents} aria-label="Clear all events">
+            <Trash2 className="mr-2 h-4 w-4" /> Clear All
           </Button>
         )}
       </CardHeader>
@@ -140,12 +146,12 @@ export function CapturedEventsList() {
         {analyzedEvents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">Nenhum evento capturado ainda.</p>
-            <p>Realize uma análise ou envie evidências para ver os resultados aqui.</p>
+            <p className="text-lg font-medium">No captured events yet.</p>
+            <p>Perform an analysis or upload evidence to see results here.</p>
           </div>
         ) : (
-          <ScrollArea className="h-[600px]">
-            <ul className="space-y-2 pr-1">
+          <ScrollArea className="h-[600px]"> {/* Adjust height as needed */}
+            <ul className="space-y-2 pr-1"> {/* Added pr-1 to prevent scrollbar overlap */}
               {analyzedEvents.map(renderEventItem)}
             </ul>
           </ScrollArea>

@@ -4,93 +4,82 @@
 
 @layer base {
   :root {
-    /* Light Theme for SkyAnalytics */
-    --background: 210 20% 98%; /* Very light cool gray (almost white) */
-    --foreground: 220 15% 20%; /* Dark cool gray (near black for text) */
+    --background: 222 47% 11%; /* Dark Blue */
+    --foreground: 210 40% 98%; /* Light Gray */
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 220 15% 20%;
+    --card: 222 47% 13%; /* Slightly Lighter Dark Blue */
+    --card-foreground: 210 40% 96%; /* Light Gray */
 
-    --popover: 0 0% 100%; /* White */
-    --popover-foreground: 220 15% 20%;
+    --popover: 222 47% 10%; /* Darker Blue */
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 220 70% 55%; /* Professional Blue */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary: 210 90% 60%; /* Bright Blue */
+    --primary-foreground: 222 47% 15%; /* Dark Blue for text on primary */
 
-    --secondary: 210 15% 90%; /* Light Gray */
-    --secondary-foreground: 220 15% 25%; /* Dark Gray for text on secondary */
+    --secondary: 217 33% 25%; /* Muted Blue */
+    --secondary-foreground: 210 40% 90%; /* Lighter Gray for text on secondary */
 
-    --muted: 210 15% 85%; /* Slightly darker gray for muted backgrounds */
-    --muted-foreground: 220 10% 45%; /* Medium Gray for muted text */
+    --muted: 217 33% 18%; /* Darker Muted Blue */
+    --muted-foreground: 215 28% 65%; /* Medium Gray for muted text */
 
-    --accent: 190 60% 50%; /* Teal/Cyan accent for tech feel */
-    --accent-foreground: 0 0% 100%; /* White text on accent */
+    --accent: 173 90% 40%; /* Teal/Cyan Accent */
+    --accent-foreground: 210 40% 98%; /* Light Gray text on accent */
 
-    --destructive: 0 70% 55%; /* Standard destructive red */
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 55%; /* Red */
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 210 15% 88%; /* Light border color */
-    --input: 210 15% 94%; /* Light input background */
-    --ring: 220 70% 65%; /* Ring color based on primary */
+    --border: 217 33% 20%; /* Dark Blue Border */
+    --input: 217 33% 22%; /* Dark Blue Input */
+    --ring: 210 90% 70%; /* Lighter Bright Blue for Ring */
 
-    --chart-1: 220 70% 50%;
-    --chart-2: 190 60% 45%;
-    --chart-3: 210 40% 60%;
-    --chart-4: 200 65% 55%;
-    --chart-5: 230 60% 65%;
+    --chart-1: 210 90% 55%;
+    --chart-2: 173 80% 45%;
+    --chart-3: 280 80% 60%;
+    --chart-4: 50 90% 55%;
+    --chart-5: 340 85% 65%;
     
     --radius: 0.5rem;
 
-    /* Sidebar specific theme variables (kept, but might need adjustment if sidebar is used with light theme) */
-    /* For a light theme sidebar, these would be different. Assuming sidebar matches app's light theme for now. */
-    --sidebar-background: 210 20% 96%; /* Slightly off-white for sidebar */
-    --sidebar-foreground: 220 15% 25%; /* Dark text for sidebar */
-    --sidebar-primary: 220 70% 55%; 
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 15% 90%; /* Light gray for sidebar item hover */
-    --sidebar-accent-foreground: 220 70% 55%; /* Primary color for active/hover text */
-    --sidebar-border: 210 15% 85%; 
-    --sidebar-ring: 220 70% 65%;
+    /* Sidebar specific theme variables */
+    --sidebar-background: 222 47% 9%; /* Even Darker Blue for Sidebar */
+    --sidebar-foreground: 210 40% 92%;
+    --sidebar-primary: 210 90% 60%; 
+    --sidebar-primary-foreground: 222 47% 15%;
+    --sidebar-accent: 222 47% 15%; /* Accent for hover/active items in sidebar */
+    --sidebar-accent-foreground: 210 90% 65%; /* Text color for active/hover items */
+    --sidebar-border: 222 47% 12%; 
+    --sidebar-ring: 210 90% 70%;
   }
 
   .dark {
-    /* Define dark theme variables here if a toggle is ever implemented */
-    /* For now, we are primarily light theme based on request */
-    --background: 220 15% 10%; 
-    --foreground: 210 20% 90%;
-
-    --card: 220 15% 15%;
-    --card-foreground: 210 20% 90%;
-
-    --popover: 220 15% 12%;
-    --popover-foreground: 210 20% 90%;
-
-    /* Primary, Accent, etc. might need dark theme specific adjustments if not already suitable */
-    --primary: 220 70% 60%; 
-    --primary-foreground: 220 15% 10%;
-
-    --secondary: 220 15% 25%;
-    --secondary-foreground: 210 20% 90%;
-
-    --muted: 220 15% 20%;
-    --muted-foreground: 210 15% 60%;
-
-    --accent: 190 60% 55%;
-    --accent-foreground: 220 15% 5%;
-
-    --border: 220 15% 25%;
-    --input: 220 15% 22%;
-    --ring: 220 70% 70%;
-
-    /* Sidebar dark theme */
-    --sidebar-background: 220 15% 8%; 
-    --sidebar-foreground: 210 20% 85%; 
-    --sidebar-primary: 220 70% 60%; 
-    --sidebar-primary-foreground: 220 15% 10%;
-    --sidebar-accent: 220 15% 20%; 
-    --sidebar-accent-foreground: 190 60% 55%; 
-    --sidebar-border: 220 15% 18%; 
-    --sidebar-ring: 190 60% 65%;
+    /* Variables kept for consistency, but the default theme above IS the dark theme */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 90% 60%;
+    --primary-foreground: 222 47% 15%;
+    --secondary: 217 33% 25%;
+    --secondary-foreground: 210 40% 90%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 28% 65%;
+    --accent: 173 90% 40%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 20%;
+    --input: 217 33% 22%;
+    --ring: 210 90% 70%;
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 210 40% 92%;
+    --sidebar-primary: 210 90% 60%;
+    --sidebar-primary-foreground: 222 47% 15%;
+    --sidebar-accent: 222 47% 15%;
+    --sidebar-accent-foreground: 210 90% 65%;
+    --sidebar-border: 222 47% 12%;
+    --sidebar-ring: 210 90% 70%;
   }
 }
 
@@ -102,9 +91,4 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif; /* Ensure Inter is applied globally */
   }
-}
-
-/* Additional global styles for landing page if needed */
-.hero-gradient-text {
-  @apply bg-gradient-to-r from-primary via-blue-500 to-accent text-transparent bg-clip-text;
 }

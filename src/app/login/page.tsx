@@ -12,12 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogIn, Loader2 } from 'lucide-react';
-import SkyAnalyticsLogo from '@/components/layout/SkyAnalyticsLogo';
+import { LogIn, Loader2, Combine } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
-  password: z.string().min(1, { message: 'A senha é obrigatória.' }),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
@@ -40,7 +39,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.push('/upload'); 
+      router.push('/'); 
     }
   }, [user, router]);
 
@@ -52,6 +51,7 @@ export default function LoginPage() {
     );
   }
 
+  // If user is already logged in, show loader while redirecting
   if (user && !authLoading) {
     return (
        <div className="flex items-center justify-center min-h-screen bg-background">
@@ -60,47 +60,48 @@ export default function LoginPage() {
     );
   }
 
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
-      <Link href="/" className="flex items-center gap-2 mb-8" aria-label="SkyAnalytics Início">
-        <SkyAnalyticsLogo className="h-8 w-8 text-primary" />
-        <span className="text-2xl font-bold text-foreground">SkyAnalytics</span>
-      </Link>
-      <Card className="w-full max-w-md shadow-xl border">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-muted/30 p-4">
+      <div className="flex items-center gap-2 mb-8 text-foreground">
+        <Combine className="h-8 w-8 text-primary" />
+        <span className="text-2xl font-bold">SkyAnalytics</span>
+      </div>
+      <Card className="w-full max-w-md shadow-xl border-border">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2 text-foreground">
+          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2 text-card-foreground">
             <LogIn className="h-6 w-6 text-primary" />
-            Bem-vindo de Volta
+            Welcome Back
           </CardTitle>
-          <CardDescription>Faça login para acessar seu painel SkyAnalytics.</CardDescription>
+          <CardDescription>Login to access your SkyAnalytics dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Endereço de E-mail</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
-                placeholder="voce@exemplo.com"
+                placeholder="you@example.com"
                 className={errors.email ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
-                <Link href="/forgot-password"
+                <Label htmlFor="password">Password</Label>
+                <Link href="/forgot-password" // Placeholder, not implemented
                   className="text-xs text-primary hover:underline"
                 >
-                  Esqueceu a senha?
+                  Forgot password?
                 </Link>
               </div>
               <Input
                 id="password"
                 type="password"
                 {...register('password')}
-                placeholder="Sua senha"
+                placeholder="Your password"
                 className={errors.password ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
@@ -111,13 +112,13 @@ export default function LoginPage() {
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
               )}
-              Entrar
+              Sign In
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Não tem uma conta?{' '}
+            Don't have an account?{' '}
             <Link href="/register" className="font-medium text-primary hover:underline">
-              Cadastre-se aqui
+              Sign up here
             </Link>
           </p>
         </CardContent>

@@ -1,17 +1,11 @@
 
-import { FileUploadForm } from '@/components/analysis/FileUploadForm';
-
-// Esta página agora serve como o painel principal após o login
-export default function DashboardPage() {
+// This file is a placeholder as the old layout used src/app/page.tsx for the dashboard.
+// SidebarNav has been reverted to point to src/app/page.tsx for the main dashboard.
+export default function UploadPagePlaceholder() {
   return (
-    <div className="container mx-auto py-2">
-      <h1 className="text-3xl font-bold mb-8 text-foreground font-headline">Painel de Análise SkyAnalytics</h1>
-      <p className="text-muted-foreground mb-6">
-        Bem-vindo ao seu painel SkyAnalytics. Aqui você pode enviar novas evidências para análise ou revisar eventos passados.
-      </p>
-      <FileUploadForm />
-      {/* Futuramente, aqui poderiam entrar outros componentes do painel, como CameraFeed e CapturedEventsList,
-          ou um resumo geral. Por enquanto, FileUploadForm é o conteúdo principal. */}
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold">Upload Area</h1>
+      <p>This page is a placeholder. The main dashboard is at the root path.</p>
     </div>
   );
 }

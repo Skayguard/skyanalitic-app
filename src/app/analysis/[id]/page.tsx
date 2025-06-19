@@ -40,7 +40,7 @@ export default function AnalysisDetailsPage() {
         const decodedId = decodeURIComponent(rawId);
         setPageEventId(decodedId);
       } catch (e) {
-        console.error("Erro ao decodificar ID do evento da URL:", e, "ID Bruto:", rawId);
+        console.error("Error decoding event ID from URL:", e, "Raw ID:", rawId);
         setPageEventId(rawId); 
       }
     } else {
@@ -61,7 +61,7 @@ export default function AnalysisDetailsPage() {
 
     if (analyzedEvents && analyzedEvents.length > 0) {
       const foundEvent = analyzedEvents.find(e => e.id === pageEventId);
-      console.log('[AnalysisDetailsPage] Evento encontrado no contexto:', foundEvent); 
+      console.log('[AnalysisDetailsPage] Found event in context:', foundEvent);
       setEvent(foundEvent || null);
     } else {
       if(!isLoadingContext) setEvent(null);
@@ -72,7 +72,7 @@ export default function AnalysisDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-muted-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-        <p className="text-xl">Carregando relatório de análise...</p>
+        <p className="text-xl">Loading analysis report...</p>
       </div>
     );
   }
@@ -81,13 +81,13 @@ export default function AnalysisDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center p-6">
         <AlertTriangle className="h-16 w-16 text-destructive mb-6" />
-        <h1 className="text-3xl font-bold mb-4 text-foreground">Análise Não Encontrada</h1>
+        <h1 className="text-3xl font-bold mb-4 text-foreground">Analysis Not Found</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          O relatório de análise que você está procurando não existe ou não pôde ser carregado. (ID: {pageEventId || 'N/A'})
+          The analysis report you are looking for does not exist or could not be loaded. (ID: {pageEventId || 'N/A'})
         </p>
         <Button asChild variant="outline">
-          <Link href="/upload"> {/* Alterado para /upload como painel principal */}
-            <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
+          <Link href="/"> 
+            <ArrowLeft className="mr-2 h-4 w-4" /> Go to Dashboard
           </Link>
         </Button>
       </div>
@@ -99,27 +99,27 @@ export default function AnalysisDetailsPage() {
       return (
         <div className="flex items-center gap-2">
           <GitCommitHorizontal className="h-5 w-5 text-primary" />
-          Detalhes da Análise de Rastro
+          Trail Analysis Details
         </div>
       );
     }
     return (
       <div className="flex items-center gap-2">
          <Search className="h-5 w-5 text-primary" />
-         Detalhes da Análise UAP
+         UAP Analysis Details
       </div>
     );
   };
 
   return (
-    <div className="container mx-auto py-2">
+    <div className="container mx-auto py-8">
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+        <ArrowLeft className="mr-2 h-4 w-4" /> Back
       </Button>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
-          <Card className="shadow-lg sticky top-20">
+          <Card className="shadow-lg sticky top-20 border-border">
              <CardHeader>
                 <CardTitle className="text-lg">
                     {getReportTitle()}
@@ -128,12 +128,12 @@ export default function AnalysisDetailsPage() {
             <CardContent className="p-4 pt-0">
               <h2 className="text-md font-semibold mb-2 text-foreground">{event.mediaName}</h2>
               <p className="text-xs text-muted-foreground mb-3">
-                Capturado em: {event.timestamp ? new Date(event.timestamp).toLocaleString('pt-BR') : 'Data indisponível'}
+                Captured on: {event.timestamp ? new Date(event.timestamp).toLocaleString() : 'Date unavailable'}
               </p>
               {event.thumbnailUrl && (
                 <Image
                   src={event.thumbnailUrl}
-                  alt={`Miniatura para ${event.mediaName}`}
+                  alt={`Thumbnail for ${event.mediaName}`}
                   width={400}
                   height={300}
                   className="rounded-md object-cover w-full aspect-video border border-border"

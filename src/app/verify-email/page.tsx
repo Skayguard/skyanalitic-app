@@ -19,36 +19,37 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-lg text-center shadow-xl">
+      <Card className="w-full max-w-lg text-center shadow-xl border-border">
         <CardHeader>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
             <MailCheck className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">Verifique seu E-mail</CardTitle>
+          <CardTitle className="text-2xl font-bold">Verify Your Email</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Enviamos um link de verificação para o seu endereço de e-mail. Por favor, clique no link para ativar sua conta.
+            We've sent a verification link to your email address. Please click the link to activate your account.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-sm">
-            Se você não recebeu o e-mail, verifique sua pasta de spam ou lixo eletrônico.
+            If you haven't received the email, please check your spam or junk folder.
           </p>
           {user && !user.emailVerified && (
             <Button 
               onClick={handleResendEmail} 
               variant="outline"
               disabled={isLoading}
+              className="border-primary text-primary hover:bg-primary/10"
             >
-              Reenviar E-mail de Verificação
+              Resend Verification Email
             </Button>
           )}
           <p className="text-xs text-muted-foreground">
-            Após verificar seu e-mail, você poderá fazer login.
+            Once your email is verified, you can log in.
           </p>
           <Button asChild variant="default" className="w-full sm:w-auto">
             <Link href="/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para o Login
+              Back to Login
             </Link>
           </Button>
         </CardContent>
