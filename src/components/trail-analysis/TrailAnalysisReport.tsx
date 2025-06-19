@@ -19,9 +19,8 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
     if (result.trailImageUri) {
       const link = document.createElement('a');
       link.href = result.trailImageUri;
-      // Create a filename from the video name, removing extension
       const fileName = videoName.substring(0, videoName.lastIndexOf('.')) || videoName;
-      link.download = `${fileName}_trail_analysis.png`;
+      link.download = `${fileName}_rastro_analise.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -33,19 +32,18 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
       <CardHeader>
         <CardTitle className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <Sparkles className="h-7 w-7 text-primary" />
-          Trail Analysis Report
+          Relatório de Análise de Rastro
         </CardTitle>
         <CardDescription>
-          Results for video: <span className="font-medium text-accent">{videoName}</span>
+          Resultados para o vídeo: <span className="font-medium text-accent">{videoName}</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Display error/warning message from AI if present */}
         {result.errorMessage && (
           <div className="p-4 bg-muted/50 border border-border text-foreground rounded-md flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 mt-0.5 text-amber-500 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold">Analysis Note</h4>
+              <h4 className="font-semibold">Nota da Análise</h4>
               <p className="text-sm">{result.errorMessage}</p>
             </div>
           </div>
@@ -54,10 +52,10 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
         <div>
           <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Trail Description
+            Descrição do Rastro
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-            {result.trailDescription || "No trail description was generated."}
+            {result.trailDescription || "Nenhuma descrição de rastro foi gerada."}
           </p>
         </div>
 
@@ -65,13 +63,12 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <ImageIcon className="h-5 w-5 text-primary" />
-              AI Generated Trail Image
+              Imagem de Rastro Gerada por IA
             </h3>
-            {/* Show download button only if a trail image (not a placeholder) exists */}
             {result.trailImageUri && !result.trailImageUri.startsWith('https://placehold.co') && (
               <Button onClick={handleDownloadImage} variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
-                Download Image
+                Baixar Imagem
               </Button>
             )}
           </div>
@@ -79,37 +76,36 @@ export function TrailAnalysisReport({ result, videoName }: TrailAnalysisReportPr
             <>
               <Image
                 src={result.trailImageUri}
-                alt="AI generated trail image"
-                width={600} // Max width
-                height={400} // Max height
-                className="rounded-md object-contain border border-border bg-muted/20 mx-auto" // object-contain to see full image
+                alt="Imagem de rastro gerada por IA"
+                width={600}
+                height={400}
+                className="rounded-md object-contain border border-border bg-muted/20 mx-auto"
                 data-ai-hint="object motion trail"
               />
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                This is an AI-generated visual representation and may not be an exact frame overlay.
+                Esta é uma representação visual gerada por IA e pode não ser uma sobreposição exata do quadro.
               </p>
             </>
           ) : (
             <div className="p-6 bg-muted/30 rounded-md border border-dashed border-border text-center">
               <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                No trail image was generated. {result.errorMessage ? '' : 'This can occur if the model could not identify a clear trail or due to image generation limitations.'}
+                Nenhuma imagem de rastro foi gerada. {result.errorMessage ? '' : 'Isso pode ocorrer se o modelo não conseguiu identificar um rastro claro ou devido a limitações na geração de imagem.'}
               </p>
             </div>
           )}
         </div>
         
-        {/* Success message based on results */}
         {!result.errorMessage && result.trailImageUri && !result.trailImageUri.startsWith('https://placehold.co') && (
             <div className="p-3 bg-green-700/10 border border-green-600/30 text-green-300 rounded-md flex items-center gap-2 text-sm">
                 <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                <p>Trail analysis and image generation completed successfully.</p>
+                <p>Análise de rastro e geração de imagem concluídas com sucesso.</p>
             </div>
         )}
          {!result.errorMessage && (!result.trailImageUri || result.trailImageUri.startsWith('https://placehold.co')) && result.trailDescription && (
              <div className="p-3 bg-blue-600/10 border border-blue-500/30 text-blue-300 rounded-md flex items-center gap-2 text-sm">
                 <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                <p>Textual trail analysis completed. Trail image could not be generated or is a placeholder.</p>
+                <p>Análise textual do rastro concluída. A imagem do rastro não pôde ser gerada ou é um placeholder.</p>
             </div>
         )}
 

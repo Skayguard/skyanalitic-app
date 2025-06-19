@@ -34,23 +34,21 @@ export function CameraFeed() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-  const analysisResultForArtifacts = useRef<AnalyzeUapMediaOutput | null>(null); // To store analysis for artifact generation
+  const analysisResultForArtifacts = useRef<AnalyzeUapMediaOutput | null>(null);
 
   const [currentFacingMode, setCurrentFacingMode] = useState<'environment' | 'user'>('environment');
   const [videoDeviceCount, setVideoDeviceCount] = useState(0);
   const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
 
-  // Auto motion detection related states and refs
   const autoDetectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastFrameDataRef = useRef<ImageData | null>(null);
   const [isAutoDetectingActive, setIsAutoDetectingActive] = useState<boolean>(false);
-  const captureCooldownRef = useRef<boolean>(false); // Cooldown flag
-  const [isCaptureCooldownActive, setIsCaptureCooldownActive] = useState(false); // For UI indication
+  const captureCooldownRef = useRef<boolean>(false);
+  const [isCaptureCooldownActive, setIsCaptureCooldownActive] = useState(false);
   const [boundingBox, setBoundingBox] = useState<BoundingBox | null>(null);
-  const lastBoundingBoxTimeRef = useRef<number>(0); // Timestamp of the last bounding box detection
+  const lastBoundingBoxTimeRef = useRef<number>(0);
 
 
-  // Utility to trigger file download
   const triggerDownload = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -69,33 +67,31 @@ export function CameraFeed() {
       videoRef.current.srcObject = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = null; // Important to prevent old onstop from firing
+      mediaRecorderRef.current.onstop = null; 
       mediaRecorderRef.current.stop();
     }
-    recordedChunksRef.current = []; // Clear any previously recorded data
-    setIsCameraActive(false); // Set camera to inactive
+    recordedChunksRef.current = [];
+    setIsCameraActive(false);
   }, []);
 
-  // Stop auto-detection logic
   const stopAutoDetectionLogic = useCallback(() => {
     if (autoDetectionIntervalRef.current) {
       clearInterval(autoDetectionIntervalRef.current);
       autoDetectionIntervalRef.current = null;
     }
     setIsAutoDetectingActive(false);
-    lastFrameDataRef.current = null; // Clear last frame
-    setBoundingBox(null); // Clear bounding box from UI
+    lastFrameDataRef.current = null;
+    setBoundingBox(null);
   }, []);
   
-  // Initialize or re-initialize the camera
   const initializeCamera = useCallback(async () => {
     stopCurrentStreamAndRecorder();
-    stopAutoDetectionLogic(); // Ensure auto-detection is stopped before re-initializing
+    stopAutoDetectionLogic();
     setError(null);
-    setIsSwitchingCamera(true); // Indicate camera switching is in progress
+    setIsSwitchingCamera(true);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setError("Camera access not supported by this browser.");
+      setError("Acesso à câmera não suportado por este navegador.");
       setVideoDeviceCount(0);
       setIsSwitchingCamera(false);
       return;
@@ -107,14 +103,13 @@ export function CameraFeed() {
       setVideoDeviceCount(videoDevices.length);
 
       if (videoDevices.length === 0) {
-        setError("No camera found.");
+        setError("Nenhuma câmera encontrada.");
         setIsSwitchingCamera(false);
         return;
       }
 
-      // Basic constraints, attempt with facingMode if multiple cameras
       const constraints: MediaStreamConstraints = { video: { width: { ideal: 1280 }, height: { ideal: 720 } } };
-      if (videoDevices.length > 0) { // Only set facingMode if cameras are available
+      if (videoDevices.length > 0) {
          (constraints.video as MediaTrackConstraints).facingMode = currentFacingMode;
       }
       
@@ -122,26 +117,22 @@ export function CameraFeed() {
       try {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (err) {
-        // Fallback if facingMode fails (e.g., on desktops or single-camera devices)
-        console.warn(`Failed to get camera with facingMode: ${currentFacingMode}. Attempting fallback.`, err);
+        console.warn(`Falha ao obter câmera com facingMode: ${currentFacingMode}. Tentando fallback.`, err);
         stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } }); 
       }
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
-            // Ensure video is playing before setting active, for dimensions
-            videoRef.current?.play().catch(e => console.warn("Video play interrupted or failed on load:", e));
+            videoRef.current?.play().catch(e => console.warn("Reprodução de vídeo interrompida ou falhou ao carregar:", e));
             setIsCameraActive(true);
-            setError(null); // Clear previous errors
-            // Set overlay canvas dimensions once video metadata is loaded
+            setError(null);
             if (overlayCanvasRef.current && videoRef.current) { 
                 overlayCanvasRef.current.width = videoRef.current.videoWidth;
                 overlayCanvasRef.current.height = videoRef.current.videoHeight;
             }
         };
         
-        // Setup MediaRecorder
         const mimeTypes = ['video/webm; codecs=vp9', 'video/webm; codecs=vp8', 'video/webm', 'video/mp4'];
         let chosenMimeType: string | undefined;
         for (const mimeType of mimeTypes) {
@@ -156,50 +147,46 @@ export function CameraFeed() {
           mediaRecorderRef.current.ondataavailable = (event) => {
             if (event.data.size > 0) recordedChunksRef.current.push(event.data);
           };
-          // onstop is handled in handleCaptureAndAnalyze
         } else {
-          toast({ title: "Video Recording", description: "Video format for recording not supported.", variant: "destructive" });
+          toast({ title: "Gravação de Vídeo", description: "Formato de vídeo para gravação não suportado.", variant: "destructive" });
           mediaRecorderRef.current = null;
         }
       }
     } catch (err) {
-      let errorMessage = "Could not access camera. Check permissions.";
+      let errorMessage = "Não foi possível acessar a câmera. Verifique as permissões.";
       if (err instanceof Error) {
-        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") errorMessage = "Camera permission denied.";
-        else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") errorMessage = `No camera found for mode '${currentFacingMode}'.`;
-        else if (err.name === "NotReadableError" || err.name === "TrackStartError" || err.name === "OverconstrainedError") errorMessage = "Camera in use or doesn't support settings.";
-        else errorMessage = `Error accessing camera: ${err.message}`;
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") errorMessage = "Permissão da câmera negada.";
+        else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") errorMessage = `Nenhuma câmera encontrada para o modo '${currentFacingMode}'.`;
+        else if (err.name === "NotReadableError" || err.name === "TrackStartError" || err.name === "OverconstrainedError") errorMessage = "Câmera em uso ou não suporta as configurações.";
+        else errorMessage = `Erro ao acessar a câmera: ${err.message}`;
       }
       setError(errorMessage);
-      setIsCameraActive(false); // Ensure camera is marked inactive on error
+      setIsCameraActive(false);
     } finally {
-        setIsSwitchingCamera(false); // Done switching/initializing
+        setIsSwitchingCamera(false);
     }
-  }, [currentFacingMode, toast, stopCurrentStreamAndRecorder, stopAutoDetectionLogic]); // Dependencies for re-initialization
+  }, [currentFacingMode, toast, stopCurrentStreamAndRecorder, stopAutoDetectionLogic]);
 
-  // Effect to initialize camera on mount and when currentFacingMode changes
   useEffect(() => {
     initializeCamera();
-    // Cleanup on unmount
     return () => {
       stopCurrentStreamAndRecorder();
-      stopAutoDetectionLogic(); // Also clear auto-detection interval
+      stopAutoDetectionLogic();
     };
-  }, [initializeCamera]); // Rerun only when initializeCamera function reference changes (due to its deps)
+  }, [initializeCamera]);
 
   const handleSwitchCamera = () => {
-    if (videoDeviceCount < 2 && !isSwitchingCamera) { // Only show toast if not already switching
-      toast({ title: "Switch Camera", description: "No other camera available." });
+    if (videoDeviceCount < 2 && !isSwitchingCamera) {
+      toast({ title: "Alternar Câmera", description: "Nenhuma outra câmera disponível." });
       return;
     }
-    if (isSwitchingCamera) return; // Prevent multiple switches
+    if (isSwitchingCamera) return;
     setCurrentFacingMode(prevMode => prevMode === 'environment' ? 'user' : 'environment');
   };
 
   const extractFrameAndDownload = async (videoElement: HTMLVideoElement, time: number, fileName: string, canvasElement: HTMLCanvasElement) => {
     return new Promise<void>((resolve, reject) => {
       const onSeekedOrLoaded = () => {
-        // Remove listeners to prevent multiple calls
         videoElement.removeEventListener('seeked', onSeekedOrLoaded);
         videoElement.removeEventListener('loadeddata', onSeekedOrLoaded); 
 
@@ -210,163 +197,148 @@ export function CameraFeed() {
           context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
           canvasElement.toBlob((blob) => {
             if (blob) { triggerDownload(blob, fileName); resolve(); }
-            else { reject(new Error("Failed to create frame blob.")); }
+            else { reject(new Error("Falha ao criar blob do quadro.")); }
           }, 'image/png');
-        } else { reject(new Error("Failed to get canvas context for extraction.")); }
+        } else { reject(new Error("Falha ao obter contexto do canvas para extração.")); }
       };
 
       videoElement.addEventListener('seeked', onSeekedOrLoaded);
-      videoElement.addEventListener('loadeddata', onSeekedOrLoaded); // Also listen to loadeddata for videos that load fast
+      videoElement.addEventListener('loadeddata', onSeekedOrLoaded);
 
-      // If video is already ready and seekable
-      if (videoElement.readyState >= videoElement.HAVE_METADATA) { // HAVE_METADATA means duration and dimensions are known
+      if (videoElement.readyState >= videoElement.HAVE_METADATA) {
         videoElement.currentTime = time;
-        // For some browsers/videos, seeked event might not fire if currentTime is already set.
-        // If readyState is high enough, directly call the handler.
-        if (videoElement.currentTime === time) { // Ensure currentTime was set
-            if(videoElement.readyState >= videoElement.HAVE_CURRENT_DATA) { // HAVE_CURRENT_DATA means frame at currentTime is available
+        if (videoElement.currentTime === time) {
+            if(videoElement.readyState >= videoElement.HAVE_CURRENT_DATA) {
                 onSeekedOrLoaded();
             }
         }
       } 
-      // else: onloadeddata will handle setting currentTime once metadata is loaded.
-      videoElement.onerror = () => reject(new Error("Video element error during frame extraction."));
+      videoElement.onerror = () => reject(new Error("Erro no elemento de vídeo durante a extração do quadro."));
     });
   };
 
   const generateAndDownloadArtifacts = async (videoBlob: Blob, analysisData: AnalyzeUapMediaOutput, baseFileName: string, originalCaptureTimestamp: string, eventId: string) => {
     if (!canvasRef.current) { 
-      toast({ title: "Artifact Error", description: "Analysis canvas reference not found.", variant: "destructive" });
+      toast({ title: "Erro de Artefato", description: "Referência do canvas de análise não encontrada.", variant: "destructive" });
       return;
     }
-    const canvasForArtifacts = canvasRef.current; // Use the existing analysis canvas
-    // Create a temporary video element to play the recorded blob for frame extraction
+    const canvasForArtifacts = canvasRef.current;
     const tempVideoEl = document.createElement('video');
-    tempVideoEl.crossOrigin = "anonymous"; // Important for toBlob/toDataURL if source is different (not relevant here but good practice)
+    tempVideoEl.crossOrigin = "anonymous";
     tempVideoEl.src = URL.createObjectURL(videoBlob);
     tempVideoEl.muted = true; tempVideoEl.preload = 'metadata';
 
-    // Wait for video metadata to load to ensure duration and dimensions are available
     await new Promise<void>((resolve, reject) => {
         tempVideoEl.onloadedmetadata = () => {
-            // Attempt a play/pause to ensure the video is 'seekable' on all platforms
             tempVideoEl.play().then(() => {
                 tempVideoEl.pause();
                 resolve();
             }).catch(e => {
-                console.warn("Play-pause for 'seekability' failed (ignorable on some systems):", e);
-                resolve(); // Resolve anyway, seeking might still work
+                console.warn("Play-pause para 'seekability' falhou (ignorável em alguns sistemas):", e);
+                resolve();
             });
         };
         tempVideoEl.onerror = (e) => {
-            console.error("Error loading temporary video for artifacts:", e, tempVideoEl.error);
-            reject(new Error(`Failed to load recorded video for artifacts. Code: ${tempVideoEl.error?.code}`));
+            console.error("Erro ao carregar vídeo temporário para artefatos:", e, tempVideoEl.error);
+            reject(new Error(`Falha ao carregar vídeo gravado para artefatos. Código: ${tempVideoEl.error?.code}`));
         };
-        tempVideoEl.load(); // Start loading the video
+        tempVideoEl.load();
     });
     
     try {
-      await extractFrameAndDownload(tempVideoEl, 0.1, `${baseFileName}_photo.png`, canvasForArtifacts); // Extract from near start
-      toast({ title: "Photo Extracted", description: "1 photo has been downloaded.", duration: 3000 });
+      await extractFrameAndDownload(tempVideoEl, 0.1, `${baseFileName}_foto.png`, canvasForArtifacts);
+      toast({ title: "Foto Extraída", description: "1 foto foi baixada.", duration: 3000 });
     } catch (e) {
-      toast({ title: "Photo Extraction Error", description: (e as Error).message, variant: "destructive" });
-    } finally { URL.revokeObjectURL(tempVideoEl.src); /* Clean up object URL */ }
-    // Generate TXT file with technical data
-    const technicalData = `SkyAnalytics - Technical Report\nID: ${eventId}\nMedia: ${baseFileName}\nTimestamp: ${new Date(originalCaptureTimestamp).toLocaleString('en-US', { timeZone: 'UTC' })} UTC\nResolution: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}\nBrowser: ${navigator.userAgent}\nCamera: ${currentFacingMode}\n\nApp Config:\n  Auto-Detection: ${settings.enableAutoMotionDetection}\n  Sensitivity: ${settings.motionSensitivity}%\n  Min Brightness: ${settings.minBrightness}%\n  Min Object Size: ${settings.minObjectSize}\n\nAI Analysis:\n  UAP Probability: ${(analysisData.probabilityOfGenuineUapEvent * 100).toFixed(1)}%\n  Anomaly Grade: ${analysisData.anomalyGrade}\n  Summary: ${analysisData.summary}\n  AI Technical Details: ${analysisData.technicalDetails}\n  DB Comparisons: ${analysisData.databaseComparisons}`;
+      toast({ title: "Erro na Extração da Foto", description: (e as Error).message, variant: "destructive" });
+    } finally { URL.revokeObjectURL(tempVideoEl.src); }
+    
+    const technicalData = `SkyAnalytics - Relatório Técnico\nID: ${eventId}\nMídia: ${baseFileName}\nTimestamp: ${new Date(originalCaptureTimestamp).toLocaleString('pt-BR', { timeZone: 'UTC' })} UTC\nResolução: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}\nNavegador: ${navigator.userAgent}\nCâmera: ${currentFacingMode}\n\nConfigurações do App:\n  Detecção Automática: ${settings.enableAutoMotionDetection}\n  Sensibilidade: ${settings.motionSensitivity}%\n  Brilho Mínimo: ${settings.minBrightness}%\n  Tam. Mín. Objeto: ${settings.minObjectSize}\n\nAnálise IA:\n  Probabilidade UAP: ${(analysisData.probabilityOfGenuineUapEvent * 100).toFixed(1)}%\n  Grau de Anomalia: ${analysisData.anomalyGrade}\n  Resumo: ${analysisData.summary}\n  Detalhes Técnicos IA: ${analysisData.technicalDetails}\n  Comparações BD: ${analysisData.databaseComparisons}`;
     const txtBlob = new Blob([technicalData.trim()], { type: 'text/plain' });
-    triggerDownload(txtBlob, `${baseFileName}_data.txt`);
-    toast({ title: "Technical Data Generated", description: "TXT file downloaded.", duration: 3000 });
+    triggerDownload(txtBlob, `${baseFileName}_dados.txt`);
+    toast({ title: "Dados Técnicos Gerados", description: "Arquivo TXT baixado.", duration: 3000 });
   };
 
 
   const handleCaptureAndAnalyze = useCallback(async (triggeredBy: 'manual' | 'auto' = 'manual') => {
     if (!videoRef.current || !canvasRef.current || !isCameraActive || !mediaRecorderRef.current || isProcessingCapture) {
       if (triggeredBy === 'manual') {
-        toast({ title: "Capture Failed", description: "Camera/MediaRecorder not ready or already processing.", variant: "destructive" });
+        toast({ title: "Falha na Captura", description: "Câmera/MediaRecorder não pronto ou já processando.", variant: "destructive" });
       }
       return;
     }
 
     setIsProcessingCapture(true);
-    setBoundingBox(null); // Clear bounding box during capture
+    setBoundingBox(null);
     const video = videoRef.current; const analysisCanvas = canvasRef.current;
-    // Capture initial frame for AI analysis
     analysisCanvas.width = video.videoWidth; analysisCanvas.height = video.videoHeight;
     const context = analysisCanvas.getContext('2d');
     if (!context) {
-      toast({ title: "Capture Failed", description: "Analysis canvas context unavailable.", variant: "destructive" });
+      toast({ title: "Falha na Captura", description: "Contexto do canvas de análise indisponível.", variant: "destructive" });
       setIsProcessingCapture(false); return;
     }
     context.drawImage(video, 0, 0, analysisCanvas.width, analysisCanvas.height);
-    const initialFrameDataUri = analysisCanvas.toDataURL('image/jpeg'); // Use JPEG for smaller size if preferred for AI
-    const captureTimestamp = new Date().toISOString(); // Consistent timestamp for event and files
-    const eventId = captureTimestamp + Math.random().toString(36).substring(2, 9); // Unique event ID
-    const mediaName = `SkyAnalytics_Capture_${new Date(captureTimestamp).toLocaleString('en-GB').replace(/[\/\:]/g, '-').replace(/\s/g, '_')}`;
+    const initialFrameDataUri = analysisCanvas.toDataURL('image/jpeg');
+    const captureTimestamp = new Date().toISOString();
+    const eventId = captureTimestamp + Math.random().toString(36).substring(2, 9);
+    const mediaName = `SkyAnalytics_Captura_${new Date(captureTimestamp).toLocaleString('pt-BR').replace(/[\/\s:]/g, '_')}`;
 
-    // Start recording
-    recordedChunksRef.current = []; // Clear previous chunks
+    recordedChunksRef.current = [];
     mediaRecorderRef.current.start();
-    toast({ title: "Recording Started", description: "Recording 5s video...", duration: 3000, icon: <Videotape className="h-5 w-5 text-primary"/> });
+    toast({ title: "Gravação Iniciada", description: "Gravando vídeo de 5s...", duration: 3000, icon: <Videotape className="h-5 w-5 text-primary"/> });
 
-    // Define onstop behavior for MediaRecorder
     mediaRecorderRef.current.onstop = async () => {
-      toast({ title: "Recording Finished", description: "Processing video...", duration: 2000 });
+      toast({ title: "Gravação Finalizada", description: "Processando vídeo...", duration: 2000 });
       const videoBlob = new Blob(recordedChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'video/webm' });
-      // Optionally download the recorded video
-      if (videoBlob.size > 0) triggerDownload(videoBlob, `${mediaName}_video_5s.mp4`); // Changed to mp4 for wider compatibility, though actual blob type is webm
-      else toast({ title: "Recording Failed", description: "No video data recorded.", variant: "destructive"});
-      // Generate other artifacts if analysis data is available
+      if (videoBlob.size > 0) triggerDownload(videoBlob, `${mediaName}_video_5s.mp4`);
+      else toast({ title: "Falha na Gravação", description: "Nenhum dado de vídeo gravado.", variant: "destructive"});
+      
       if (analysisResultForArtifacts.current) {
         await generateAndDownloadArtifacts(videoBlob, analysisResultForArtifacts.current, mediaName, captureTimestamp, eventId);
       } else {
-        toast({ title: "Artifact Generation", description: "AI analysis incomplete, artifacts may lack data.", variant: "default" });
+        toast({ title: "Geração de Artefatos", description: "Análise IA incompleta, artefatos podem não ter dados.", variant: "default" });
       }
-      setIsProcessingCapture(false); // Reset processing state
-      analysisResultForArtifacts.current = null; // Clear stored analysis
-      // If triggered by auto-detection, start cooldown
-      if (settings.enableAutoMotionDetection) { // Check settings directly
+      setIsProcessingCapture(false);
+      analysisResultForArtifacts.current = null;
+      
+      if (settings.enableAutoMotionDetection) {
         captureCooldownRef.current = true;
         setIsCaptureCooldownActive(true);
         setTimeout(() => { 
             captureCooldownRef.current = false; 
-            setIsCaptureCooldownActive(false); // Update UI state for cooldown
-        }, 30000); // 30-second cooldown
+            setIsCaptureCooldownActive(false);
+        }, 30000); // 30s
       }
     };
 
-    // Stop recording after 5 seconds
     setTimeout(() => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
     }, 5000);
 
-    // Perform AI analysis on the initial frame
-    analysisResultForArtifacts.current = null; // Reset before new analysis
+    analysisResultForArtifacts.current = null;
     try {
       const result = await analyzeUapMedia({ mediaDataUri: initialFrameDataUri });
-      analysisResultForArtifacts.current = result; // Store for artifact generation
+      analysisResultForArtifacts.current = result;
       addAnalyzedEvent({ id: eventId, timestamp: captureTimestamp, thumbnailUrl: initialFrameDataUri, mediaName: mediaName, analysis: result, analysisType: AnalysisType.UAP });
-      toast({ title: "AI Analysis Complete", description: `UAP Probability: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%` });
+      toast({ title: "Análise IA Concluída", description: `Probabilidade UAP: ${(result.probabilityOfGenuineUapEvent * 100).toFixed(1)}%` });
     } catch (err) {
-      analysisResultForArtifacts.current = null; // Ensure it's cleared on error
-      toast({ title: "AI Analysis Failed", description: err instanceof Error ? err.message : "Unknown error.", variant: "destructive" });
-      setIsProcessingCapture(false); // Ensure processing state is reset on AI error too
+      analysisResultForArtifacts.current = null;
+      toast({ title: "Falha na Análise IA", description: err instanceof Error ? err.message : "Erro desconhecido.", variant: "destructive" });
+      setIsProcessingCapture(false);
     }
-  }, [isCameraActive, isProcessingCapture, mediaRecorderRef, canvasRef, videoRef, toast, addAnalyzedEvent, settings.enableAutoMotionDetection, settings.motionSensitivity, settings.minBrightness, settings.minObjectSize, currentFacingMode]); // Add settings dependencies
+  }, [isCameraActive, isProcessingCapture, mediaRecorderRef, canvasRef, videoRef, toast, addAnalyzedEvent, settings.enableAutoMotionDetection, settings.motionSensitivity, settings.minBrightness, settings.minObjectSize, currentFacingMode]);
 
-  // Process frame for motion detection
   const processFrameForMotion = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !isCameraActive || isProcessingCapture || captureCooldownRef.current || isLoadingSettings || !settings.enableAutoMotionDetection) {
-      if (!settings.enableAutoMotionDetection) setBoundingBox(null); // Clear box if auto-detection is off
+      if (!settings.enableAutoMotionDetection) setBoundingBox(null);
       return;
     }
 
     const video = videoRef.current;
-    const detectionCanvas = canvasRef.current; // Re-use main canvas for detection
-    const detectionCtx = detectionCanvas.getContext('2d', { willReadFrequently: true }); // For frequent getImageData
+    const detectionCanvas = canvasRef.current;
+    const detectionCtx = detectionCanvas.getContext('2d', { willReadFrequently: true });
     if (!detectionCtx) return;
 
-    // Scale down for performance
-    const scaleFactor = 4; // Process at 1/4th resolution
+    const scaleFactor = 4;
     detectionCanvas.width = video.videoWidth / scaleFactor;
     detectionCanvas.height = video.videoHeight / scaleFactor;
     detectionCtx.drawImage(video, 0, 0, detectionCanvas.width, detectionCanvas.height);
@@ -379,22 +351,18 @@ export function CameraFeed() {
     if (lastFrameDataRef.current) {
       const data = currentFrame.data;
       const lastData = lastFrameDataRef.current.data;
-      // Adjust sensitivity: higher value = less sensitive to minor changes
-      // Lower sensitivityThreshold means more sensitive (smaller brightness diff triggers)
-      const sensitivityThreshold = (100 - settings.motionSensitivity) / 100 * 70 + 5; // Range roughly 5-75. Higher user setting -> lower threshold -> more sensitive.
-      const brightnessThreshold = settings.minBrightness / 100 * 255; // Pixels darker than this are ignored
-      const pixelStep = 4; // Analyze every 4th pixel (in each direction effectively)
+      const sensitivityThreshold = (100 - settings.motionSensitivity) / 100 * 70 + 5;
+      const brightnessThreshold = settings.minBrightness / 100 * 255;
+      const pixelStep = 4;
 
       for (let y = 0; y < detectionCanvas.height; y += pixelStep) {
         for (let x = 0; x < detectionCanvas.width; x += pixelStep) {
-          const i = (y * detectionCanvas.width + x) * 4; // Index for RGBA
-          // Calculate current pixel brightness (simple average)
+          const i = (y * detectionCanvas.width + x) * 4;
           const r = data[i]; const g = data[i+1]; const b = data[i+2];
           const currentBrightness = (r + g + b) / 3;
           
-          if (currentBrightness < brightnessThreshold) continue; // Skip dark pixels
+          if (currentBrightness < brightnessThreshold) continue;
 
-          // Calculate last pixel brightness
           const lr = lastData[i]; const lg = lastData[i+1]; const lb = lastData[i+2];
           const lastBrightness = (lr + lg + lb) / 3;
           
@@ -407,35 +375,29 @@ export function CameraFeed() {
           }
         }
       }
-      // Adjust minObjectSize interpretation: higher value means more changed pixels needed
-      // This is a very abstract interpretation of "size"
-      const minChangedPixelsToTrigger = Math.max(5, settings.minObjectSize * (detectionCanvas.width / 250)); // Normalize based on canvas width somewhat
+      const minChangedPixelsToTrigger = Math.max(5, settings.minObjectSize * (detectionCanvas.width / 250)); 
       
-      if (changedPixels > minChangedPixelsToTrigger && maxX > minX) { // Ensure a valid box
-        console.log(`Motion detected! Changed pixels: ${changedPixels}`);
-        // Scale bounding box coordinates back to original video size
+      if (changedPixels > minChangedPixelsToTrigger && maxX > minX) {
+        console.log(`Movimento detectado! Pixels alterados: ${changedPixels}`);
         const finalX = minX * scaleFactor;
         const finalY = minY * scaleFactor;
         const finalWidth = (maxX - minX) * scaleFactor;
         const finalHeight = (maxY - minY) * scaleFactor;
         
         setBoundingBox({ x: finalX, y: finalY, width: finalWidth, height: finalHeight });
-        lastBoundingBoxTimeRef.current = Date.now(); // Update time of last detection
+        lastBoundingBoxTimeRef.current = Date.now();
         handleCaptureAndAnalyze('auto');
       } else {
-        // Clear bounding box if no motion detected for a while
-        if (Date.now() - lastBoundingBoxTimeRef.current > 1000) { // 1 second delay
+        if (Date.now() - lastBoundingBoxTimeRef.current > 1000) {
           setBoundingBox(null);
         }
       }
     }
-    lastFrameDataRef.current = currentFrame; // Store current frame for next comparison
-  }, [isCameraActive, isProcessingCapture, isLoadingSettings, settings, handleCaptureAndAnalyze]); // Include settings in dependencies
+    lastFrameDataRef.current = currentFrame;
+  }, [isCameraActive, isProcessingCapture, isLoadingSettings, settings, handleCaptureAndAnalyze]);
 
-  // Effect to draw bounding box on overlay canvas
   useEffect(() => { 
     if (!overlayCanvasRef.current || !videoRef.current || !isCameraActive) {
-        // Clear canvas if not active or refs not set
         const overlayCtx = overlayCanvasRef.current?.getContext('2d');
         overlayCtx?.clearRect(0, 0, overlayCanvasRef.current?.width || 0, overlayCanvasRef.current?.height || 0);
         return;
@@ -444,35 +406,32 @@ export function CameraFeed() {
     const overlayCtx = overlayCanvasRef.current.getContext('2d');
     if (!overlayCtx) return;
 
-    // Ensure overlay canvas matches video dimensions
     if (overlayCanvasRef.current.width !== videoRef.current.videoWidth || overlayCanvasRef.current.height !== videoRef.current.videoHeight) {
         overlayCanvasRef.current.width = videoRef.current.videoWidth;
         overlayCanvasRef.current.height = videoRef.current.videoHeight;
     }
     
-    overlayCtx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height); // Clear previous drawings
+    overlayCtx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
 
     if (boundingBox) {
-      overlayCtx.strokeStyle = 'hsl(var(--primary))'; // Use theme's primary color
+      overlayCtx.strokeStyle = 'hsl(var(--primary))';
       overlayCtx.lineWidth = 3;
       overlayCtx.strokeRect(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
     }
-  }, [boundingBox, isCameraActive]); // Redraw when boundingBox or camera state changes
+  }, [boundingBox, isCameraActive]);
 
 
-  // Start/stop auto-detection logic based on settings and camera state
   const startAutoDetectionLogic = useCallback(() => {
     if (isLoadingSettings || !isCameraActive || !settings.enableAutoMotionDetection || isProcessingCapture || autoDetectionIntervalRef.current) {
-      return; // Don't start if conditions not met or already running
+      return;
     }
     
-    // Ensure refs are available (should be if camera is active)
     if (!videoRef.current || !canvasRef.current) return;
 
     setIsAutoDetectingActive(true);
-    lastFrameDataRef.current = null; // Reset last frame on start
-    autoDetectionIntervalRef.current = setInterval(processFrameForMotion, 500); // Check every 500ms
-    console.log("Auto motion detection started.");
+    lastFrameDataRef.current = null;
+    autoDetectionIntervalRef.current = setInterval(processFrameForMotion, 500);
+    console.log("Detecção automática de movimento iniciada.");
 
   }, [isLoadingSettings, isCameraActive, settings.enableAutoMotionDetection, isProcessingCapture, processFrameForMotion]);
 
@@ -480,9 +439,8 @@ export function CameraFeed() {
     if (!isLoadingSettings && isCameraActive && settings.enableAutoMotionDetection && !isProcessingCapture) {
       startAutoDetectionLogic();
     } else {
-      stopAutoDetectionLogic(); // Stop if conditions are no longer met
+      stopAutoDetectionLogic();
     }
-    // Cleanup interval on component unmount or when dependencies change leading to stop
     return () => {
       stopAutoDetectionLogic();
     };
@@ -494,54 +452,50 @@ export function CameraFeed() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-card-foreground">
           <Camera className="h-6 w-6 text-primary" />
-          Live Camera Feed
+          Feed da Câmera ao Vivo
         </CardTitle>
         <CardDescription>
-          Real-time monitoring. Auto-detection can be enabled in settings.
+          Monitoramento em tempo real. A detecção automática pode ser ativada nas configurações.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="aspect-video bg-muted rounded-md overflow-hidden mb-4 relative border border-border">
           <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-          {/* Overlay Canvas for bounding box */}
           <canvas ref={overlayCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
           
-          {isSwitchingCamera && !error && ( // Show loader only when switching and no other error
+          {isSwitchingCamera && !error && (
              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
-                <p className="text-muted-foreground">Switching camera...</p>
+                <p className="text-muted-foreground">Alternando câmera...</p>
             </div>
           )}
-          {!isCameraActive && !error && !isSwitchingCamera && ( // Initializing state
+          {!isCameraActive && !error && !isSwitchingCamera && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
-              <p className="text-muted-foreground">Initializing camera...</p>
+              <p className="text-muted-foreground">Inicializando câmera...</p>
             </div>
           )}
-          {error && ( // Display error overlay
+          {error && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-4 text-center">
               <AlertTriangle className="h-12 w-12 text-destructive mb-2" />
-              <p className="text-destructive-foreground font-medium">Camera Error</p>
+              <p className="text-destructive-foreground font-medium">Erro na Câmera</p>
               <p className="text-sm text-muted-foreground">{error}</p>
-              {/* Offer to switch camera if multiple are available and error is not during switching */}
               {videoDeviceCount > 1 && (
                 <Button onClick={handleSwitchCamera} variant="outline" size="sm" className="mt-3">
-                    <SwitchCamera className="mr-2 h-4 w-4" /> Try Other Camera
+                    <SwitchCamera className="mr-2 h-4 w-4" /> Tentar Outra Câmera
                 </Button>
               )}
             </div>
           )}
-          {/* Recording indicator */}
-          {isCameraActive && !error && ( // Show only if camera is active and no error
+          {isCameraActive && !error && (
             <div className="absolute bottom-2 right-2 opacity-80">
               <div className="bg-destructive text-destructive-foreground px-2 py-1 text-xs rounded-full flex items-center gap-1">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                REC
+                GRAV
               </div>
             </div>
           )}
         </div>
-        {/* Hidden canvas for frame analysis */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -549,38 +503,37 @@ export function CameraFeed() {
               onClick={() => handleCaptureAndAnalyze('manual')}
               disabled={!isCameraActive || isProcessingCapture || isSwitchingCamera || isLoadingSettings}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              aria-label="Manually Capture Frame, Record Video, and Analyze"
+              aria-label="Capturar Quadro Manualmente, Gravar Vídeo e Analisar"
             >
               {isProcessingCapture ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Zap className="mr-2 h-4 w-4" />
               )}
-              {isProcessingCapture ? 'Processing...' : 'Manual Capture'}
+              {isProcessingCapture ? 'Processando...' : 'Captura Manual'}
             </Button>
             
-            {videoDeviceCount > 1 ? ( // Show switch camera button only if multiple devices
+            {videoDeviceCount > 1 ? (
                  <Button 
                     onClick={handleSwitchCamera} 
                     variant="outline"
-                    disabled={isSwitchingCamera || isProcessingCapture || isLoadingSettings || !isCameraActive} // Disable if not active
-                    aria-label="Switch camera"
-                    title="Switch Camera"
+                    disabled={isSwitchingCamera || isProcessingCapture || isLoadingSettings || !isCameraActive}
+                    aria-label="Alternar câmera"
+                    title="Alternar Câmera"
                  >
                     {isSwitchingCamera ? <Loader2 className="h-5 w-5 animate-spin" /> : <SwitchCamera className="h-5 w-5" />}
-                    <span className="ml-2 hidden sm:inline">Switch Camera</span>
+                    <span className="ml-2 hidden sm:inline">Alternar Câmera</span>
                  </Button>
-            ) : <div /> /* Placeholder for grid layout */ }
+            ) : <div /> }
         </div>
         
         {isProcessingCapture && (
           <div className="mt-2 text-center text-sm text-muted-foreground">
-            <p>Performing AI analysis and preparing files for download...</p>
-            <p>This may take a few moments.</p>
+            <p>Realizando análise IA e preparando arquivos para download...</p>
+            <p>Isso pode levar alguns instantes.</p>
           </div>
         )}
 
-        {/* Auto-detection status indicator */}
         {!isLoadingSettings && settings.enableAutoMotionDetection && (
           <div className={cn("mt-3 text-sm flex items-center justify-center p-2 rounded-md border", 
             isAutoDetectingActive && !isCaptureCooldownActive ? "bg-green-700/20 border-green-600 text-green-300" : 
@@ -588,15 +541,14 @@ export function CameraFeed() {
             "bg-muted/50 border-border text-muted-foreground"
           )}>
             <Waves className="mr-2 h-4 w-4" />
-            {isAutoDetectingActive && !isCaptureCooldownActive ? 'Auto-detection ACTIVE' : 
-             isCaptureCooldownActive ? 'Detection Cooldown...' : 
-             'Auto-detection INACTIVE'}
+            {isAutoDetectingActive && !isCaptureCooldownActive ? 'Detecção Automática ATIVA' : 
+             isCaptureCooldownActive ? 'Resfriamento da Detecção...' : 
+             'Detecção Automática INATIVA'}
           </div>
         )}
-         {/* Message if auto-detection is off in settings */}
          {!isLoadingSettings && !settings.enableAutoMotionDetection && (
             <p className="mt-3 text-xs text-center text-muted-foreground">
-                To enable automatic motion detection, go to <Link href="/settings" className="underline hover:text-primary">Settings</Link>.
+                Para ativar a detecção automática de movimento, vá para <Link href="/settings" className="underline hover:text-primary">Configurações</Link>.
             </p>
         )}
       </CardContent>

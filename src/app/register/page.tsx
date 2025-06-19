@@ -15,11 +15,11 @@ import { useRouter } from 'next/navigation';
 import { UserPlus, Loader2, Combine } from 'lucide-react';
 
 const registerSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  email: z.string().email({ message: 'Por favor, insira um endereço de e-mail válido.' }),
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
-  message: 'Passwords do not match.',
+  message: 'As senhas não coincidem.',
   path: ['confirmPassword'],
 });
 
@@ -73,41 +73,41 @@ export default function RegisterPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2 text-card-foreground">
             <UserPlus className="h-6 w-6 text-primary" />
-            Create Your Account
+            Crie Sua Conta
           </CardTitle>
-          <CardDescription>Join SkyAnalytics to unlock powerful data insights.</CardDescription>
+          <CardDescription>Junte-se ao SkyAnalytics para desbloquear insights de dados poderosos.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Endereço de E-mail</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
-                placeholder="you@example.com"
+                placeholder="voce@exemplo.com"
                 className={errors.email ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
                 {...register('password')}
-                placeholder="Create a password (min. 6 chars)"
+                placeholder="Crie uma senha (mín. 6 caracteres)"
                 className={errors.password ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 {...register('confirmPassword')}
-                placeholder="Repeat your password"
+                placeholder="Repita sua senha"
                 className={errors.confirmPassword ? 'border-destructive focus:border-destructive' : 'focus:border-primary'}
               />
               {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
@@ -118,13 +118,13 @@ export default function RegisterPage() {
               ) : (
                 <UserPlus className="mr-2 h-4 w-4" />
               )}
-              Sign Up
+              Registrar
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            Já tem uma conta?{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Log in here
+              Faça login aqui
             </Link>
           </p>
         </CardContent>

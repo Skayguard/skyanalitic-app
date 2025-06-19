@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         message = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
         break;
       case 'auth/user-not-found':
-      case 'auth/wrong-password': // Firebase v9+ uses 'auth/invalid-credential' for both user-not-found and wrong-password
+      case 'auth/wrong-password':
       case 'auth/invalid-credential':
         message = 'E-mail ou senha incorretos.';
         break;
@@ -94,8 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Redirecionamento é tratado pelo useEffect no AppLayout
-      // router.push('/upload'); // Rota para o painel principal
+      // O redirecionamento é tratado pelo useEffect no AppLayout
     } catch (error) {
       handleAuthError(error as AuthError, 'Falha ao fazer login.');
     } finally {

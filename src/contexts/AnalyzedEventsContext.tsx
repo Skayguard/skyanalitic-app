@@ -53,7 +53,7 @@ const uploadDataUriToStorageIfNeeded = async (
     } catch (uploadError) {
       const firebaseStorageError = uploadError as FirebaseStorageError;
       console.error(`[AnalyzedEventsContext] Erro ao enviar ${filename} para Firebase Storage (eventId: ${eventId}):`, firebaseStorageError);
-      let description = firebaseStorageError.message;
+      let description = `Falha ao enviar ${filename}. Código: ${firebaseStorageError.code}. Mensagem: ${firebaseStorageError.message}`;
       if (firebaseStorageError.code === 'storage/retry-limit-exceeded') {
         description = `O upload de ${filename} falhou após múltiplas tentativas. Verifique sua conexão de rede e tente novamente. (${firebaseStorageError.message})`;
       } else if (firebaseStorageError.code === 'storage/unauthorized') {
@@ -193,7 +193,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       analysis: processedAnalysis,
     };
 
-    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Objeto do evento preparado para Firestore:', JSON.stringify({ ...eventToSave, analysis: eventToSave.analysis ? "{...dadosDaAnalise...}" : null }, null, 2));
+    console.log('[AnalyzedEventsContext] addAnalyzedEvent: Objeto do evento preparado para Firestore:', JSON.stringify({ ...eventToSave, analysis: eventToSave.analysis ? `{...dadosDaAnalise...tipo:${eventData.analysisType}}` : null }, null, 2));
 
     try {
       console.log('[AnalyzedEventsContext] addAnalyzedEvent: Tentando salvar na coleção Firestore:', EVENTS_COLLECTION);
@@ -209,7 +209,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
         analysis: processedAnalysis,
         timestamp: eventData.timestamp, 
       };
-      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Evento preparado para atualização do estado local:', JSON.stringify({ ...newEventForState, analysis: newEventForState.analysis ? "{...dadosDaAnalise...}" : null }, null, 2));
+      console.log('[AnalyzedEventsContext] addAnalyzedEvent: Evento preparado para atualização do estado local:', JSON.stringify({ ...newEventForState, analysis: newEventForState.analysis ? `{...dadosDaAnalise...tipo:${eventData.analysisType}}` : null }, null, 2));
 
       setAnalyzedEvents(prevEvents => {
         const updatedEvents = [newEventForState, ...prevEvents]
@@ -220,7 +220,7 @@ export function AnalyzedEventsProvider({ children }: { children: ReactNode }) {
       
        toast({
         title: "Evento Salvo na Nuvem",
-        description: `Análise "${eventData.mediaName}" (${eventData.analysisType}) salva com sucesso.`,
+        description: `Análise "${eventData.mediaName}" (Tipo: ${eventData.analysisType}) salva com sucesso.`,
       });
     } catch (firestoreError) {
       const fsError = firestoreError as FirestoreError;

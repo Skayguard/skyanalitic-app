@@ -11,39 +11,38 @@ import { Progress } from "@/components/ui/progress";
 interface AnalysisReportProps {
   analysis: AnalyzeUapMediaOutput;
   mediaName: string;
-  timestamp?: string; // Make timestamp optional for now
+  timestamp?: string;
 }
 
 export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisReportProps) {
-  console.log('[AnalysisReport] Props received:', { analysis, mediaName, timestamp });
+  console.log('[AnalysisReport] Props recebidas:', { analysis, mediaName, timestamp });
 
   if (!analysis) {
-    console.error('[AnalysisReport] "analysis" prop is undefined or null.');
+    console.error('[AnalysisReport] Prop "analysis" está indefinida ou nula.');
     return (
       <Card className="shadow-lg border border-border bg-card">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-destructive-foreground flex items-center gap-2">
             <AlertTriangle className="h-7 w-7 text-destructive" />
-            Report Error
+            Erro no Relatório
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-destructive-foreground">Could not load analysis data.</p>
+          <p className="text-destructive-foreground">Não foi possível carregar os dados da análise.</p>
         </CardContent>
       </Card>
     );
   }
 
   const probabilityValue = analysis.probabilityOfGenuineUapEvent;
-  // Ensure probability is a number between 0 and 1 before multiplying by 100
   const probabilityPercent =
     probabilityValue !== undefined && probabilityValue !== null
       ? probabilityValue * 100
       : 0;
 
   const isHighProbability = probabilityPercent > 50;
-
   console.log('[AnalysisReport] ProbabilityPercent:', probabilityPercent, 'IsHighProbability:', isHighProbability);
+
 
   const DetailItem: React.FC<{ icon: React.ElementType, label: string, value: string | number | React.ReactNode, valueClassName?: string }> = ({ icon: Icon, label, value, valueClassName }) => {
     return (
@@ -62,16 +61,15 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
       <CardHeader>
         <CardTitle className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <BrainCircuit className="h-7 w-7 text-primary" />
-          AI Analysis Report
+          Relatório de Análise IA
         </CardTitle>
         <CardDescription>
-          Detailed results for: <span className="font-medium text-accent">{mediaName}</span>
-          {/* Safely render timestamp */}
+          Resultados detalhados para: <span className="font-medium text-accent">{mediaName}</span>
           {timestamp && typeof timestamp === 'string' && (
-            ` (Analyzed on: ${new Date(timestamp).toLocaleString()})`
+            ` (Analisado em: ${new Date(timestamp).toLocaleString('pt-BR')})`
           )}
-          {!timestamp && typeof timestamp === 'string' && ( // if timestamp is an empty string
-             ` (Analysis timestamp unavailable)`
+          {!timestamp && typeof timestamp === 'string' && (
+             ` (Timestamp da análise indisponível)`
           )}
         </CardDescription>
       </CardHeader>
@@ -79,7 +77,7 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
         <dl className="divide-y divide-border">
           <DetailItem
             icon={Percent}
-            label="Probability of Genuine UAP Event"
+            label="Probabilidade de Evento UAP Genuíno"
             value={
               <div className="flex items-center gap-2">
                 <span className={`font-bold text-lg ${isHighProbability ? 'text-destructive' : 'text-green-400'}`}>
@@ -98,23 +96,23 @@ export function AnalysisReport({ analysis, mediaName, timestamp }: AnalysisRepor
 
           <DetailItem
             icon={FileText}
-            label="Summary"
-            value={<p className="leading-relaxed">{analysis.summary || "Not available"}</p>}
+            label="Resumo"
+            value={<p className="leading-relaxed">{analysis.summary || "Não disponível"}</p>}
           />
           <DetailItem
             icon={BrainCircuit}
-            label="Anomaly Grade"
-            value={analysis.anomalyGrade ? <Badge variant={isHighProbability ? "destructive" : "secondary"} className="text-sm">{analysis.anomalyGrade}</Badge> : "Not available"}
+            label="Grau de Anomalia"
+            value={analysis.anomalyGrade ? <Badge variant={isHighProbability ? "destructive" : "secondary"} className="text-sm">{analysis.anomalyGrade}</Badge> : "Não disponível"}
           />
           <DetailItem
             icon={FileText}
-            label="Technical Details"
-            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.technicalDetails || "Not available"}</p>}
+            label="Detalhes Técnicos"
+            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.technicalDetails || "Não disponível"}</p>}
           />
           <DetailItem
             icon={Database}
-            label="Database Comparisons"
-            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.databaseComparisons || "Not available"}</p>}
+            label="Comparações com Banco de Dados"
+            value={<p className="whitespace-pre-wrap text-xs font-mono bg-muted/50 p-3 rounded-md">{analysis.databaseComparisons || "Não disponível"}</p>}
           />
         </dl>
       </CardContent>

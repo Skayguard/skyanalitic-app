@@ -8,8 +8,8 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'SkyAnalytics - Advanced UAP Analysis',
-  description: 'Advanced UAP analysis and tracking platform.',
+  title: 'SkyAnalytics - Análise Avançada de UAP',
+  description: 'Plataforma avançada de análise e rastreamento de UAP.',
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

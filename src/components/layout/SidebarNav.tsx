@@ -4,22 +4,20 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { LayoutDashboard, UploadCloud, Settings, LogIn, UserPlus, LogOut, GitCommitHorizontal } from 'lucide-react';
+import { LayoutDashboard, Settings, LogIn, UserPlus, LogOut, GitCommitHorizontal, Search } from 'lucide-react'; // Adicionado Search
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '../ui/button';
 
-// Navigation items for authenticated users
 const baseNavItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
-  { href: '/trail-analysis', label: 'Trail Analysis', icon: GitCommitHorizontal, requiresAuth: true },
-  { href: '/settings', label: 'Settings', icon: Settings, requiresAuth: true },
+  { href: '/', label: 'Painel Principal', icon: LayoutDashboard, requiresAuth: true }, // Alterado de /upload para /
+  { href: '/trail-analysis', label: 'Análise de Rastro', icon: GitCommitHorizontal, requiresAuth: true },
+  { href: '/settings', label: 'Configurações', icon: Settings, requiresAuth: true },
 ];
 
-// Navigation items for unauthenticated users (public pages)
 const authNavItems = [
   { href: '/login', label: 'Login', icon: LogIn, requiresAuth: false },
-  { href: '/register', label: 'Register', icon: UserPlus, requiresAuth: false },
+  { href: '/register', label: 'Registrar', icon: UserPlus, requiresAuth: false },
 ];
 
 export function SidebarNav() {
@@ -27,11 +25,11 @@ export function SidebarNav() {
   const { user, signOut, isLoading } = useAuth();
 
   const isActive = (href: string) => {
-    // Exact match for root, startsWith for others to cover sub-routes like /analysis/[id]
     if (href === '/') {
-      return pathname === '/' || pathname.startsWith('/analysis'); 
+      // Para o Painel Principal, considerar ativo se for a raiz OU a página de detalhes da análise
+      return pathname === '/' || pathname.startsWith('/analysis');
     }
-    return pathname === href || (href !== '/' && pathname.startsWith(href));
+    return pathname === href || pathname.startsWith(href);
   };
 
   const navItemsToDisplay = user ? baseNavItems : authNavItems;
@@ -43,16 +41,16 @@ export function SidebarNav() {
           <SidebarMenuItem key={item.href}>
             <Link href={item.href} passHref legacyBehavior>
               <SidebarMenuButton
-                asChild // Important for Link to work correctly with styled button
-                isActive={isActive(item.href)} // Determine if the item is active
+                asChild
+                isActive={isActive(item.href)}
                 className={cn(
                   isActive(item.href)
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground' // Active state styles
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground' // Default state styles
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                 )}
-                tooltip={item.label} // Tooltip for collapsed sidebar
+                tooltip={item.label}
               >
-                <a> {/* The actual anchor tag for navigation */}
+                <a> 
                   <item.icon className="h-5 w-5" />
                   <span className="font-medium">{item.label}</span>
                 </a>
@@ -69,11 +67,11 @@ export function SidebarNav() {
                 variant="ghost"
                 className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 onClick={signOut}
-                disabled={isLoading} // Disable button while auth state is loading
-                aria-label="Sign out"
+                disabled={isLoading}
+                aria-label="Sair"
               >
                 <LogOut className="mr-2 h-5 w-5" />
-                <span className="font-medium">Sign Out</span>
+                <span className="font-medium">Sair</span>
               </Button>
           </SidebarFooter>
         </>

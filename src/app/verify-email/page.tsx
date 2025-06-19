@@ -24,14 +24,14 @@ export default function VerifyEmailPage() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
             <MailCheck className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">Verify Your Email</CardTitle>
+          <CardTitle className="text-2xl font-bold">Verifique Seu E-mail</CardTitle>
           <CardDescription className="text-muted-foreground">
-            We've sent a verification link to your email address. Please click the link to activate your account.
+            Enviamos um link de verificação para o seu endereço de e-mail. Por favor, clique no link para ativar sua conta.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-sm">
-            If you haven't received the email, please check your spam or junk folder.
+            Se você não recebeu o e-mail, por favor, verifique sua pasta de spam ou lixo eletrônico.
           </p>
           {user && !user.emailVerified && (
             <Button 
@@ -40,16 +40,16 @@ export default function VerifyEmailPage() {
               disabled={isLoading}
               className="border-primary text-primary hover:bg-primary/10"
             >
-              Resend Verification Email
+              Reenviar E-mail de Verificação
             </Button>
           )}
           <p className="text-xs text-muted-foreground">
-            Once your email is verified, you can log in.
+            Assim que seu e-mail for verificado, você poderá fazer login.
           </p>
           <Button asChild variant="default" className="w-full sm:w-auto">
             <Link href="/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Login
+              Voltar para Login
             </Link>
           </Button>
         </CardContent>
