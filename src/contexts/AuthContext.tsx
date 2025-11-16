@@ -1,19 +1,20 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { 
-  User, 
-  onAuthStateChanged, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut as firebaseSignOut, 
+import React, {createContext, useContext, useEffect, useState, ReactNode} from 'react';
+import {
+  User,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
   sendEmailVerification,
-  type AuthError
+  type Auth,
+  type AuthError,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import {useRouter} from 'next/navigation';
+import {useToast} from '@/hooks/use-toast';
+import {getFirebaseClient} from '@/lib/firebase/client';
 
 interface AuthContextType {
   user: User | null;
@@ -26,19 +27,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({children}: {children: ReactNode}) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [auth, setAuth] = useState<Auth | null>(null);
   const router = useRouter();
-  const { toast } = useToast();
+  const {toast} = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
+    const firebaseClient = getFirebaseClient();
+    if (firebaseClient) {
+      setAuth(firebaseClient.auth);
+    }
   }, []);
+
+  useEffect(() => {
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, currentUser => {
+        setUser(currentUser);
+        setIsLoading(false);
+      });
+      return () => unsubscribe();
+    }
+  }, [auth]);
 
   const handleAuthError = (error: AuthError, defaultMessage: string) => {
     console.error(defaultMessage, error);
@@ -72,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
+    if (!auth) return;
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -79,7 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await sendVerificationEmail(userCredential.user);
         toast({
           title: 'Registro bem-sucedido!',
-          description: 'Enviamos um e-mail de verificação. Por favor, verifique sua caixa de entrada.',
+          description:
+            'Enviamos um e-mail de verificação. Por favor, verifique sua caixa de entrada.',
         });
         router.push('/verify-email');
       }
@@ -91,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!auth) return;
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -103,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!auth) return;
     setIsLoading(true);
     try {
       await firebaseSignOut(auth);
@@ -118,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   };
-  
+
   const sendVerificationEmail = async (userToSend: User) => {
     try {
       await sendEmailVerification(userToSend);
@@ -137,7 +152,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signUp, signIn, signOut, sendVerificationEmail }}>
+    <AuthContext.Provider
+      value={{user, isLoading, signUp, signIn, signOut, sendVerificationEmail}}
+    >
       {children}
     </AuthContext.Provider>
   );
